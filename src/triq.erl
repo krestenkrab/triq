@@ -44,7 +44,9 @@ report(fail,Value) ->
 
 check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 
-    case Fun(Input) of	
+    
+
+    try Fun(Input) of	
 	true -> 
 	    DoReport(pass,true),
 	    {success, Count+1};
@@ -73,11 +75,44 @@ check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 		    Any
 	    end;
 	
+	{'prop:trapexit', Fun2, Body2} ->
+	    WasTrap = process_flag(trap_exit, true),
+	    Owner = self(),
+	    PID = spawn_link
+		    (fun() ->
+			     Result = check(fun(none)->Fun2()end,none,none,QCT#triq{body=Body2}),
+			     Owner ! {self(), Result}
+		     end),
+	    receive 
+		{PID, Result} -> 
+
+		    unlink(PID),
+		    receive
+			{'EXIT', PID, _} ->
+			    true
+		    after 0 ->
+			    true
+		    end,
+		    process_flag(trap_exit, WasTrap),
+		    Result;
+
+		{'EXIT', PID, Reason} ->
+		    process_flag(trap_exit, WasTrap),
+		    DoReport(fail, Reason),
+		    {failure, Fun, Input, IDom, QCT#triq{count=Count+1}}
+		    
+	    end;
+	
 	{'prop:forall', Dom2, Syntax2, Fun2, Body2} ->
 	    check_forall(0, Dom2, Fun2, Syntax2, QCT#triq{body=Body2});
 
 	Any ->
 	    DoReport(fail,Any),
+	    {failure, Fun, Input, IDom, QCT#triq{count=Count+1}}
+
+    catch
+	Class : Exception ->
+	    DoReport(fail, {Class, Exception, erlang:get_stacktrace()}),
 	    {failure, Fun, Input, IDom, QCT#triq{count=Count+1}}
 	
     end.
@@ -123,7 +158,7 @@ check(Property) ->
 	       nil,
 	       #triq{report=fun report/2}) of
 
-	{failure, Fun, Input, InputDom, #triq{count=Count,context=Ctx,body=Body}} ->
+	{failure, Fun, Input, InputDom, #triq{count=Count,context=Ctx,body=_Body}} ->
 
 	    io:format("~nFailed after ~p tests~n", [Count]),
 

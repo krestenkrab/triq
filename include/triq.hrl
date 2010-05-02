@@ -26,6 +26,8 @@
 	{'prop:implies', Pre, ??Pre, fun() -> Property end, ??Property}).
 -define(WHENFAIL(Action, Property), 
 	{'prop:whenfail', fun() -> Action end, fun() -> Property end, ??Property}).
+-define(TRAPEXIT(Property),
+	{'prop:trapexit', fun() -> Property end, ??Property}).
 
 %% value domains
 -define(LET(X,Gen1,Gen2), 

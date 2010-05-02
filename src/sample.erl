@@ -6,9 +6,9 @@
 
 prop_append() ->
     ?FORALL({Xs,Ys},{list(int()),list(int())},
-	        lists:reverse(Xs++Ys)
-		==
-	        lists:reverse(Ys) ++ lists:reverse(Xs)).
+       ?TRAPEXIT(lists:reverse(Xs++Ys)
+		 ==
+		 lists:reverse(Ys) ++ lists:reverse(Xs))).
 
 					 
 prop_delete_2() ->
