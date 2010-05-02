@@ -50,6 +50,21 @@ simplify_tuple(TupDom,Tup,NAttempts) when is_tuple(TupDom), is_tuple(Tup) ->
     end.
 
 %%
+%% when the domain is a list...
+%%
+simplify_list(ListDom,[],_) ->
+    [];
+
+simplify_list(ListDom,List,0) ->
+    List;
+
+simplify_list(ListDom,List,NAttempts) when is_list(ListDom), is_list(List) ->
+    case simplify_member(List, ListDom, random:uniform(len(List)+1)) of
+	List -> simplify_list(ListDom, List, NAttempts-1);
+	NewList -> NewList
+    end.
+
+%%
 %% atoms...
 %%
 simplify_atom(_,'',_) ->
@@ -78,6 +93,9 @@ simplify_internal(_, '') ->
 simplify_internal(_, 0) -> 
     0;
 
+simplify_internal(_, 0.0) -> 
+    0.0;
+
 simplify_internal(#?DOM{kind=any}=Dom, Val) when is_tuple(Val) ->
     list_to_tuple(simplify_internal(Dom,tuple_to_list(Val)));
 
@@ -89,6 +107,10 @@ simplify_internal(#?DOM{kind=any}=Dom, Val) when is_atom(Val) ->
 simplify_internal(TupDom,Tup) when is_tuple(TupDom), is_tuple(Tup) ->
     %% try to simplify it 10 times...
     simplify_tuple(TupDom, Tup, 10);
+
+simplify_internal(ListDom,List) when is_tuple(ListDom), is_tuple(List) ->
+    %% try to simplify it 10 times...
+    simplify_tuple(ListDom, List, 10);
 
 
 %%
