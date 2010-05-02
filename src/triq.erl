@@ -28,6 +28,7 @@
 	      report= fun(pass,_)->ok;
 			 (fail,_)->ok;
 			 (skip,_)->ok end,
+	      shrinking= false,
 	      body}).
 
 
@@ -60,6 +61,17 @@ check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 	
 	{'prop:implies', true, _Syntax, Fun2, Body2} ->
 	    check(fun(none)->Fun2()end,none,none,QCT#triq{body=Body2});
+	
+	{'prop:whenfail', Action, Fun2, Body2} ->
+	    case check(fun(none)->Fun2()end,none,none,QCT#triq{body=Body2}) of
+		{success, _}=Success ->
+		    Success;
+		Any when not QCT#triq.shrinking ->
+		    Action(),
+		    Any;
+		Any ->
+		    Any
+	    end;
 	
 	{'prop:forall', Dom2, Syntax2, Fun2, Body2} ->
 	    check_forall(0, Dom2, Fun2, Syntax2, QCT#triq{body=Body2});
@@ -176,7 +188,7 @@ simplify(Fun,Input,InputDom,GS,Context) ->
 	%% value was changed!
 	NewInput ->
 	    %io:format("s2 ~p -> ~p~n", [Input,NewInput]),
-	    case check (Fun,NewInput,InputDom,#triq{size=GS}) of
+	    case check (Fun,NewInput,InputDom,#triq{size=GS,shrinking=true}) of
 		
 		%% still failed, try to simplify some more
 		{failure, _, _, _, #triq{context=C2}} -> 

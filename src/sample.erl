@@ -15,7 +15,8 @@ prop_delete_2() ->
     ?FORALL(L,list(int()), 
 	?IMPLIES(L /= [],
 	    ?FORALL(I,elements(L), 
-		    not lists:member(I,lists:delete(I,L))))).
+		?WHENFAIL(io:format("L=~p, I=~p~n", [L,I]),
+		    not lists:member(I,lists:delete(I,L)))))).
 
 
 inverse('<') -> '>=';
