@@ -28,6 +28,8 @@
 	{'prop:whenfail', fun() -> Action end, fun() -> Property end, ??Property}).
 -define(TRAPEXIT(Property),
 	{'prop:trapexit', fun() -> Property end, ??Property}).
+-define(TIMEOUT(Limit,Property),
+	{'prop:timeout', Limit, fun() -> Property end, ??Property}).
 
 %% value domains
 -define(LET(X,Gen1,Gen2), 

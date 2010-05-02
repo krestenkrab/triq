@@ -29,6 +29,7 @@
 			 (fail,_)->ok;
 			 (skip,_)->ok end,
 	      shrinking= false,
+	      result=undefined,
 	      body}).
 
 
@@ -99,7 +100,41 @@ check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 		{'EXIT', PID, Reason} ->
 		    process_flag(trap_exit, WasTrap),
 		    DoReport(fail, Reason),
-		    {failure, Fun, Input, IDom, QCT#triq{count=Count+1}}
+		    {failure, Fun, Input, IDom, QCT#triq{count=Count+1,result={'EXIT', Reason}}}
+		    
+	    end;
+	
+	{'prop:timeout', Limit, Fun2, Body2} ->
+	    WasTrap = process_flag(trap_exit, true),
+	    Owner = self(),
+	    PID = spawn_link
+		    (fun() ->
+			     Result = check(fun(none)->Fun2()end,none,none,QCT#triq{body=Body2}),
+			     Owner ! {self(), Result}
+		     end),
+	    receive 
+		{PID, Result} -> 
+
+		    unlink(PID),
+		    receive
+			{'EXIT', PID, _} ->
+			    true
+		    after 0 ->
+			    true
+		    end,
+		    process_flag(trap_exit, WasTrap),
+		    Result;
+
+		{'EXIT', PID, Reason} ->
+		    process_flag(trap_exit, WasTrap),
+		    DoReport(fail, Reason),
+		    {failure, Fun, Input, IDom, QCT#triq{count=Count+1,result={'EXIT', Reason}}}
+
+	    after Limit ->
+		    process_flag(trap_exit, WasTrap),
+		    Reason = {timeout, Limit},
+		    DoReport(fail, Reason),
+		    {failure, Fun, Input, IDom, QCT#triq{count=Count+1,result={'EXIT', Reason}}}
 		    
 	    end;
 	
@@ -108,12 +143,12 @@ check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 
 	Any ->
 	    DoReport(fail,Any),
-	    {failure, Fun, Input, IDom, QCT#triq{count=Count+1}}
+	    {failure, Fun, Input, IDom, QCT#triq{count=Count+1,result=Any}}
 
     catch
 	Class : Exception ->
 	    DoReport(fail, {Class, Exception, erlang:get_stacktrace()}),
-	    {failure, Fun, Input, IDom, QCT#triq{count=Count+1}}
+	    {failure, Fun, Input, IDom, QCT#triq{count=Count+1,result={'EXIT',Exception}}}
 	
     end.
     
@@ -158,9 +193,9 @@ check(Property) ->
 	       nil,
 	       #triq{report=fun report/2}) of
 
-	{failure, Fun, Input, InputDom, #triq{count=Count,context=Ctx,body=_Body}} ->
+	{failure, Fun, Input, InputDom, #triq{count=Count,context=Ctx,body=_Body,result=Error}} ->
 
-	    io:format("~nFailed after ~p tests~n", [Count]),
+	    io:format("~nFailed after ~p tests with ~p~n", [Count,Error]),
 
 	    %%
 	    %% Context is a [{Syntax,Fun,Input,Domain}...] list
@@ -180,7 +215,7 @@ check(Property) ->
 			  end,
 			  lists:zip(Context,Simp)),
 
-	    false;
+	    Error;
 
 	{success, Count} ->
 	    io:format("~nRan ~p tests~n", [Count]),
