@@ -215,12 +215,18 @@ check(Property) ->
 	    %%
 	    Simp = simplify(Fun,Input,InputDom,1000,tl(Context)),
 
-	    io:format("Simplified:~n"),
+	    %%
+	    %% Compute the counter example
+	    %%
+	    CounterExample = [{Syntax,Fun2,SimplifiedInput,Dom2} ||
+		{{Syntax,Fun2,_Input,Dom2}, SimplifiedInput} 
+		    <- lists:zip(Context,Simp)],
 
-	    lists:foreach(fun({{Syntax,_,_,_},Val}) ->
-			     io:format("\t~s = ~w~n", [Syntax,Val])
-			  end,
-			  lists:zip(Context,Simp)),
+	    %% save the counter example
+	    put('triq:counterexample', CounterExample),
+
+	    io:format("Simplified:~n"),
+	    print_counterexample(CounterExample),
 
 	    Error;
 
@@ -231,6 +237,11 @@ check(Property) ->
     end
 .
 
+print_counterexample(CounterExample) ->
+    lists:foreach(fun({Syntax,_Fun,Val,_Dom}) ->
+			  io:format("\t~s = ~w~n", [Syntax,Val])
+		  end,
+		  CounterExample).
 
 %%
 %% when the property has nested ?FORALL statements,
