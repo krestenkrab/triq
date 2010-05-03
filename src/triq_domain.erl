@@ -60,7 +60,9 @@ elem_gen(_, #?DOM{kind={list,ElemGen}}) ->
 elem_gen(_, #?DOM{kind={tuple,ElemGen}}) ->
     ElemGen;
 elem_gen(N, Gen) when is_tuple(Gen), N > 0, tuple_size(Gen) >= N ->
-    element(N,Gen).
+    element(N,Gen);
+elem_gen(N, Gen) when is_list(Gen), N > 0, length(Gen) >= N ->
+    lists:nth(N,Gen).
 
 generate_int(_,GS) ->
     random:uniform(GS) - (GS div 2).

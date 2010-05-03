@@ -45,8 +45,6 @@ report(fail,Value) ->
 
 check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 
-    
-
     try Fun(Input) of	
 	true -> 
 	    DoReport(pass,true),
@@ -171,7 +169,7 @@ check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 	    end;
 	
 	{'prop:forall', Dom2, Syntax2, Fun2, Body2} ->
-	    check_forall(0, Dom2, Fun2, Syntax2, QCT#triq{body=Body2});
+	    check_forall(0, Dom2, Fun2, Syntax2, QCT#triq{body=Body2}, gb_sets:new());
 
 	Any ->
 	    DoReport(fail,Any),
@@ -185,23 +183,34 @@ check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
     end.
     
 
-check_forall(GS,_,_,_,#triq{size=GS,count=Count}) ->
+check_forall(GS,_,_,_,#triq{size=GS,count=Count}, _) ->
     {success, Count};
 
-check_forall(_,_,_,_,#triq{size=Count,count=Count}) ->
-    {success, Count};
+%check_forall(_,_,_,_,#triq{size=Count,count=Count}, _) ->
+%    {success, Count};
 
-check_forall(N,Dom,Fun,Syntax,#triq{context=Context}=QCT) ->
+check_forall(N,Dom,Fun,Syntax,#triq{size=GS, context=Context}=QCT, Tested) ->
     Input = generate(Dom, 20 + 4*N),
 
-    case check(Fun,Input,Dom,QCT#triq{context=[{Syntax,Fun,Input,Dom}|Context]}) of
+    IsTested = gb_sets:is_member(Input,Tested),
+    if 
+	IsTested ->
+	    check_forall(N+1,Dom,Fun,Syntax,QCT,Tested);
 
-	{success,NewCount} -> 
-	    check_forall(N+1, Dom, Fun, Syntax, QCT#triq{count=NewCount});
+	true ->
+	    case check(Fun,Input,Dom,QCT#triq{size=GS div 2, 
+					      context=[{Syntax,Fun,Input,Dom}|Context]}) of
 
-	{failure, _, _, _, Ctx} ->
-	    {failure, Fun, Input, Dom, Ctx}
+		%% it did not fail, try again with N := N+1
+		{success,NewCount} -> 
+		    NewTested = gb_sets:add(Input,Tested),
+		    check_forall(N+1, Dom, Fun, Syntax, QCT#triq{count=NewCount}, NewTested);
 
+		%% it failed, report it!
+		{failure, _, _, _, Ctx} ->
+		    {failure, Fun, Input, Dom, Ctx}
+
+	    end
     end.
 
 
@@ -248,7 +257,7 @@ check(Property) ->
 	    
 	    %% Run the shrinking function
 	    %%
-	    Simp = simplify(Fun,Input,InputDom,1000,tl(Context)),
+	    Simp = simplify(Fun,Input,InputDom,1000,tl(Context),gb_sets:new()),
 
 	    %%
 	    %% Compute the counter example
@@ -285,16 +294,16 @@ print_counterexample(CounterExample) ->
 %%
 
 simplify_deeper(Input,[{_,F1,I1,G1}|T]) -> 
-    [Input | simplify(F1,I1,G1,100,T)];
+    [Input | simplify(F1,I1,G1,100,T,gb_sets:new())];
 simplify_deeper(Input,[]) -> [Input].
 
 
 %% this is the main logic for the simplify function
 
-simplify(_,Input,_,0,Context) ->
+simplify(_,Input,_,0,Context,_) ->
     simplify_deeper(Input,Context);
 
-simplify(Fun,Input,InputDom,GS,Context) ->
+simplify(Fun,Input,InputDom,GS,Context,Tested) ->
 
     %%
     %% simplify_value will attempt to shrink the
@@ -302,25 +311,29 @@ simplify(Fun,Input,InputDom,GS,Context) ->
     %% There is randomness involved, so it may just
     %% return it's Input argument...
     %%
-    case triq_simplify:simplify_value(InputDom,Input) of
+    NewInput = triq_simplify:simplify_value(InputDom,Input),
+    IsTested = gb_sets:is_member(NewInput,Tested),
 
-	%% value was unchanged, try to simplify again
-	Input -> 
-	    simplify(Fun,Input,InputDom,GS-1,Context);
+    if 
+	IsTested ->
+	    simplify(Fun,Input,InputDom,GS-1,Context,Tested);
 
-	%% value was changed!
-	NewInput ->
-	    %io:format("s2 ~p -> ~p~n", [Input,NewInput]),
+	Input =:= NewInput ->
+	    simplify_deeper(Input, Context);
+
+	true ->
+	    NewTested = gb_sets:add(NewInput,Tested),
+
 	    case check (Fun,NewInput,InputDom,#triq{size=GS,shrinking=true}) of
 		
 		%% still failed, try to simplify some more
 		{failure, _, _, _, #triq{context=C2}} -> 
-		    simplify(Fun,NewInput,InputDom,GS,C2);
-
+		    simplify(Fun,NewInput,InputDom,GS,C2,NewTested);
+		
 		%% oops, we simplified too much; try again
 		%% with the same inputs
 		{success, _} -> 
-		    simplify(Fun,Input,InputDom,GS-1,Context)
+		    simplify(Fun,Input,InputDom,GS-1,Context,NewTested)
 	    end
     end
 .

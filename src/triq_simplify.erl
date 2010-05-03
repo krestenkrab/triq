@@ -37,10 +37,10 @@ simplify_value(Dom,Val) ->
 %%
 %% when the domain is a tuple...
 %%
-simplify_tuple(TupDom,{},_) ->
+simplify_tuple({},{},_) ->
     {};
 
-simplify_tuple(TupDom,Tup,0) ->
+simplify_tuple(TupDom,Tup,0) when is_tuple(TupDom), is_tuple(Tup) ->
     Tup;
 
 simplify_tuple(TupDom,Tup,NAttempts) when is_tuple(TupDom), is_tuple(Tup) ->
@@ -52,10 +52,10 @@ simplify_tuple(TupDom,Tup,NAttempts) when is_tuple(TupDom), is_tuple(Tup) ->
 %%
 %% when the domain is a list...
 %%
-simplify_list(ListDom,[],_) ->
+simplify_list(ListDom,[],_) when is_list(ListDom) ->
     [];
 
-simplify_list(ListDom,List,0) ->
+simplify_list(ListDom,List,0) when is_list(ListDom) ->
     List;
 
 simplify_list(ListDom,List,NAttempts) when is_list(ListDom), is_list(List) ->
@@ -67,15 +67,15 @@ simplify_list(ListDom,List,NAttempts) when is_list(ListDom), is_list(List) ->
 %%
 %% atoms...
 %%
-simplify_atom(_,'',_) ->
+simplify_atom(AtomDom,'',_) when is_atom(AtomDom) ->
     '';
-simplify_atom(TupDom,Tup,0) ->
-    Tup;
+simplify_atom(AtomDom,Atom,0) ->
+    Atom;
 
-simplify_atom(TupDom,Tup,NAttempts) when is_atom(Tup) ->
-    case simplify_member(Tup, TupDom, random:uniform(len(Tup)+1)) of
-	Tup -> simplify_atom(TupDom, Tup, NAttempts-1);
-	NewTup -> NewTup
+simplify_atom(AtomDom,Atom,NAttempts) when is_atom(Atom) ->
+    case simplify_member(Atom, AtomDom, random:uniform(len(Atom)+1)) of
+	Atom -> simplify_atom(AtomDom, Atom, NAttempts-1);
+	NewAtom -> NewAtom
     end.
 
 %%
@@ -119,24 +119,7 @@ simplify_internal(ListDom,List) when is_list(ListDom), is_list(List) ->
 %% one of the elements
 %%
 simplify_internal(AggrDom,Aggr) when is_list(Aggr); is_tuple(Aggr)->
-    NewAggr = 
-    case random:uniform(2) of
-	1 -> remove_any(Aggr);
-	2 -> simplify_member(Aggr, AggrDom, random:uniform(len(Aggr)+1))
-    end,
-
-    %% if the above did not change anything; 
-    %% or the change was illegal according to AggrDom ...
-    case NewAggr of 
-	Aggr -> case random:uniform(2) of
-		    1 -> simplify_value(AggrDom,Aggr);
-		    2 -> Aggr
-		end;
-	NewAggr -> NewAggr
-    end    
-    ;
-
-
+    simplify_dom_list(AggrDom,Aggr,100);
 
 simplify_internal(_,0.0) -> 
     0.0;
@@ -166,6 +149,24 @@ simplify_internal(_,Any) ->
     end.
 
 
+simplify_dom_list(_ListDom,List,0) ->
+    List;
+
+simplify_dom_list(AggrDom,Aggr,N) ->
+    NewAggr = 
+	case random:uniform(2) of
+	    1 -> remove_any(Aggr);
+	    2 -> simplify_member(Aggr, AggrDom, random:uniform(len(Aggr)+1))
+	end,
+
+    % io:format("simplified ~p: ~p -> ~p~n", [N,Aggr,NewAggr]),
+
+    %% if the above did not change anything; 
+    case NewAggr of 
+	Aggr -> simplify_dom_list(AggrDom,Aggr,N-1);
+	NewAggr -> NewAggr
+    end    .
+
 
 
 %% remove any element of a list
@@ -188,13 +189,13 @@ remove_any(Tup) when is_tuple(Tup) ->
     list_to_tuple(remove_any(tuple_to_list(Tup))).
 
     
-%% remove any element of a list
+%% simplify HowMany element(s) of the list
 simplify_member(Any, _Dom, 0) -> Any;
 simplify_member(List, ListDom, HowMany) when is_list(List) ->
     Len = length(List),
 
     %%
-    %% remove element at idx RemIdx
+    %% replace element at RemIdx with simplified one
     %%
     RemIdx = random:uniform(Len),    
     Elm = lists:nth(RemIdx, List),
