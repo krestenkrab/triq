@@ -152,7 +152,14 @@ generate_internal(V,_) when is_atom(V);
 
 
 sized(Size,Gen) ->
-    #?DOM{kind={sized, Size, Gen}}.
+    #?DOM{kind={sized, Gen, Size},
+	  generate=fun(#?DOM{kind={sized,Gen2,Size2}}, _GS) ->
+			   generate(Gen2, Size2)
+		   end,
+	  simplify=fun(#?DOM{kind={sized,Gen2,_}},Val) ->
+			   triq_simplify:simplify_value (Gen2,Val)
+		   end
+	 }.
 
 elements([]) -> undefined;
 elements(L) when is_list(L) ->
