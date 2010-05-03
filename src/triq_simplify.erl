@@ -108,9 +108,9 @@ simplify_internal(TupDom,Tup) when is_tuple(TupDom), is_tuple(Tup) ->
     %% try to simplify it 10 times...
     simplify_tuple(TupDom, Tup, 10);
 
-simplify_internal(ListDom,List) when is_tuple(ListDom), is_tuple(List) ->
+simplify_internal(ListDom,List) when is_list(ListDom), is_list(List) ->
     %% try to simplify it 10 times...
-    simplify_tuple(ListDom, List, 10);
+    simplify_list(ListDom, List, 10);
 
 
 %%
