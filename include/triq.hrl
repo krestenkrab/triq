@@ -16,33 +16,53 @@
 %% limitations under the License.
 %%
 
--define(DELAY(X),fun()->X end).
--define(FORCE(X), (X)()).
+-define(DELAY(X), fun()->X end).
+-define(FORCE(X), (X)() ).
 
 %% properties
 -define(FORALL(X,Gen,Property),
 	{'prop:forall', Gen, ??X, fun(X)-> begin Property end end, ??Property}).
 -define(IMPLIES(Pre, Property), 
-	{'prop:implies', Pre, ??Pre, fun() -> Property end, ??Property}).
+	{'prop:implies', Pre, ??Pre, ?DELAY( Property ), ??Property}).
 -define(WHENFAIL(Action, Property), 
-	{'prop:whenfail', fun() -> Action end, fun() -> Property end, ??Property}).
+	{'prop:whenfail', ?DELAY(Action), ?DELAY(Property), ??Property}).
 -define(TRAPEXIT(Property),
-	{'prop:trapexit', fun() -> Property end, ??Property}).
+	{'prop:trapexit', ?DELAY(Property), ??Property}).
 -define(TIMEOUT(Limit,Property),
-	{'prop:timeout', Limit, fun() -> Property end, ??Property}).
+	{'prop:timeout', Limit, ?DELAY(Property), ??Property}).
+
+%%
+%% import property functions
+%%
+-import(triq, [fails/1, check/1]).
+
 
 %% value domains
+
+%%% LET is also defined by eunit; what to do?
+-ifndef(LET).
 -define(LET(X,Gen1,Gen2), 
 	triq_domain:glet(Gen1, fun(X)->Gen2 end}).
+-endif.
+
 -define(SIZED(Size,Gen),
 	triq_domain:sized(Size,Gen)).
 
-
+%%
+%% import domain functions (a.k.a. generators)
+%%
 -import(triq_domain, [list/1, tuple/1, int/0, real/0, elements/1, any/0, atom/0, 
 		      choose/2]).
--import(triq, [fails/1]).
 
 
+%%
+%% Enabling this (the default) does two things (similar to eunit).
+%%
+%% - Make all prop_* function be exported, and
+%%
+%% - Define this exported function:
+%%
+%%     check() -> triq:module(?MODULE).
 %%
 -ifndef(TRIQ_NOAUTO).
 -compile({parse_transform, triq_autoexport}).
