@@ -12,11 +12,12 @@ prop_append() ->
 
 					 
 prop_delete_2() ->
+  fails(
     ?FORALL(L,list(int()), 
 	?IMPLIES(L /= [],
 	    ?FORALL(I,elements(L), 
 		?WHENFAIL(io:format("L=~p, I=~p~n", [L,I]),
-		    not lists:member(I,lists:delete(I,L)))))).
+		    not lists:member(I,lists:delete(I,L))))))).
 
 
 inverse('<') -> '>=';

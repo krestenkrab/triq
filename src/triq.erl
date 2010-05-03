@@ -18,7 +18,7 @@
 
 -module(triq).
 
--export([check/1]).
+-export([check/1,fails/1]).
 
 -import(triq_domain, [generate/2]).
 
@@ -57,6 +57,13 @@ check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 	
 	{failure, _, _, _, _}=Fail -> 
 	    Fail;
+
+	{'prop:fails', Property} ->
+	    case check(fun(none)->Property end,none,none,QCT#triq{}) of
+		{success, _} ->
+		    {failure, Fun, Input, IDom, QCT#triq{result=unexpected_success}};
+		_ -> {success, Count+1}
+	    end;
 	
 	{'prop:implies', false, _, _, _} ->
 	    DoReport(skip,true),
@@ -271,4 +278,10 @@ simplify(Fun,Input,InputDom,GS,Context) ->
 	    end
     end
 .
+
+%%
+%% A Property which succeeds when its argument fails.
+%%
+fails(Prop) ->
+    {'prop:fails', Prop}.
 
