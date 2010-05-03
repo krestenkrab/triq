@@ -61,7 +61,9 @@ check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 	{'prop:fails', Property} ->
 	    case check(fun(none)->Property end,none,none,QCT#triq{}) of
 		{success, _} ->
-		    {failure, Fun, Input, IDom, QCT#triq{result=unexpected_success}};
+		    {failure, Fun, Input, IDom, QCT#triq{result=unexpected_success,
+							 context=[{"?",Fun,Input,IDom}
+								  |QCT#triq.context]}};
 		_ -> {success, Count+1}
 	    end;
 	
@@ -163,8 +165,11 @@ check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 check_forall(GS,_,_,_,#triq{size=GS,count=Count}) ->
     {success, Count};
 
-check_forall(N,Dom,Fun,Syntax,#triq{size=GS,context=Context}=QCT) ->
-    Input = generate(Dom,GS),
+check_forall(_,_,_,_,#triq{size=Count,count=Count}) ->
+    {success, Count};
+
+check_forall(N,Dom,Fun,Syntax,#triq{context=Context}=QCT) ->
+    Input = generate(Dom, 20 + 4*N),
 
     case check(Fun,Input,Dom,QCT#triq{context=[{Syntax,Fun,Input,Dom}|Context]}) of
 
@@ -177,11 +182,18 @@ check_forall(N,Dom,Fun,Syntax,#triq{size=GS,context=Context}=QCT) ->
     end.
 
 
-
+all(_Fun,[]) ->
+    true;
+all(Fun,[H|T]) ->
+    case Fun(H) of
+	true -> all(Fun,T);
+	NonTrue ->
+	    NonTrue
+    end.
 
 check(Module) when is_atom(Module) ->
     Info = Module:module_info(exports),
-    lists:all(fun({Fun,0}) ->
+    all(fun({Fun,0}) ->
 		      case atom_to_list(Fun) of
 			  "prop_" ++ _ ->
 			      io:format("Testing ~p:~p/0~n", [Module, Fun]),
