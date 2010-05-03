@@ -38,7 +38,8 @@
 	triq_domain:sized(Size,Gen)).
 
 
--import(triq_domain, [list/1, tuple/1, int/0, real/0, elements/1, any/0, atom/0]).
+-import(triq_domain, [list/1, tuple/1, int/0, real/0, elements/1, any/0, atom/0, 
+		      choose/2]).
 -import(triq, [fails/1]).
 
 

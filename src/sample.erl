@@ -2,7 +2,7 @@
 
 -include("triq.hrl").
 
--export([prop_append/0, prop_echo/0, prop_delete_2/0, main/0]).
+-export([prop_append/0, prop_delete_2/0, prop_binop/0, prop_timeout/0]).
 
 prop_append() ->
     ?FORALL({Xs,Ys},{list(int()),list(int())},
@@ -38,10 +38,8 @@ prop_binop() ->
 	    end
 	   ).
 
-prop_echo() ->
-    ?FORALL(X, any(), 
-	    X == X).
 
-main() ->
-    triq:check(?MODULE)
-.
+prop_timeout() ->
+   ?FORALL(N,choose(50,150),
+     ?TIMEOUT(100,
+       timer:sleep(N) == ok)).

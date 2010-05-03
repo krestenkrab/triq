@@ -21,7 +21,7 @@
 -include("triq_domain.hrl").
 
 %% generators
--export([list/1, tuple/1, int/0, real/0, sized/2, elements/1, glet/2, any/0, atom/0]).
+-export([list/1, tuple/1, int/0, real/0, sized/2, elements/1, glet/2, any/0, atom/0, choose/2]).
 
 %% using a generator
 -export([generate/2, elem_gen/2]).
@@ -184,6 +184,13 @@ any()  ->
 		   end
 	 }.
 
-
-
-
+choose(M,N) when is_integer(M), is_integer(N), M<N ->
+    #?DOM{kind={choose,M,N},
+	  generate=fun(_,_) ->
+			   random:uniform(N-M+1) - 1 + M
+		   end,
+	  simplify=fun(_Dom,Val) when Val>M -> 
+			   Val-1;
+		      (_Dom,_) -> 
+			   M
+		   end}.
