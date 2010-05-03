@@ -42,7 +42,6 @@ report(fail,false) ->
 report(fail,Value) ->
     io:format("Failed with: ~p~n", [Value]).
 
-
 check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 
     try Fun(Input) of	
@@ -56,6 +55,10 @@ check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 	{failure, _, _, _, _}=Fail -> 
 	    Fail;
 
+	{'prop:timeout', Limit, Fun2, Body2} ->
+	    Yield = check_timeout(Fun,Input,IDom,Limit,Fun2,QCT#triq{body=Body2}),
+	    Yield;
+	
 	{'prop:fails', Property} ->
 	    case check(fun(none)->Property end,none,none,QCT#triq{}) of
 		{success, _} ->
@@ -88,84 +91,27 @@ check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 	    Main = self(),
 	    PID = spawn_link
 		    (fun() ->
-			     Result = check(fun(none)->Fun2()end,none,none,QCT#triq{body=Body2}),
+			     Result = check(fun(none)->Fun2()end,none,none,
+					    QCT#triq{body=Body2}),
 			     Main ! {self(), Result}
 		     end),
 	    receive 
 		{PID, Result} -> 
 
+		    %% unlink and flush any EXITs
 		    unlink(PID),
-		    receive
-			{'EXIT', PID, _} ->
-			    true
-		    after 0 ->
-			    true
-		    end,
 		    process_flag(trap_exit, WasTrap),
+		    receive {'EXIT', PID, _} -> true
+		    after 0 -> true end,
+
 		    Result;
 
 		{'EXIT', PID, Reason} ->
 		    process_flag(trap_exit, WasTrap),
 		    DoReport(fail, Reason),
-		    {failure, Fun, Input, IDom, QCT#triq{count=Count+1,result={'EXIT', Reason}}}
-		    
-	    end;
-	
-	{'prop:timeout', Limit, Fun2, Body2} ->
-
-	    Main = self(),
-	    Controller = spawn
-	        (fun() -> 
-			 process_flag(trap_exit, true),
-			 Controller = self(),
-			 
-			 Slave = spawn_link
-				 (fun() ->
-					  Slave = self(),
-					  Result = check(fun(none)->Fun2()end,
-							 none,
-							 none,
-							 QCT#triq{body=Body2}),
-					  Controller ! {Slave, Result}
-				  end),
-			 
-			 receive 
-			     {Slave, Result} ->
-				 % io:format("~p: result=~p~n", [Controller,Result]),
-				 Main ! {Controller, Result };
-
-			     {'EXIT', Slave, Reason} ->
-				 % io:format("~p: died=~p~n", [Controller,Reason]),
-				 DoReport(fail, Reason),
-				 Main ! {Controller, {failure, Fun, Input, IDom, 
-				  QCT#triq{count=Count+1,result={'EXIT', Reason}}}};
-			     
-			     {'EXIT', _, timeout} ->
-				 erlang:exit(Slave,kill)			     
-			 end
-		 end),
-
-	    receive 
-		{Controller, Result} ->
-		    Result;
-
-		Bogus ->
-		    io:format("wrong: ~p [expected ~p]~n", [Bogus, Controller]),
-		    erlang:throw({badmsg, Bogus})
-		    
-	    after Limit ->
-
-		    % Yank the controller (and the slave)
-		    erlang:exit(Controller, timeout),
-
-		    % flush any reply from our queue
-		    receive {Controller, _} -> ignore
-		    after 5 -> ignore end,
-		    
-		    Reason = {timeout, Limit},
-		    DoReport(fail, Reason),
 		    {failure, Fun, Input, IDom, 
 		     QCT#triq{count=Count+1,result={'EXIT', Reason}}}
+		    
 	    end;
 	
 	{'prop:forall', Dom2, Syntax2, Fun2, Body2} ->
@@ -183,11 +129,65 @@ check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
     end.
     
 
+check_timeout(Fun,Input,IDom,Limit,Fun2,#triq{count=Count,report=DoReport}=QCT) ->
+    Main = self(),
+    Controller = 
+	spawn
+	  (fun() -> 
+		   process_flag(trap_exit, true),
+		   Controller = self(),
+		   
+		   Slave = spawn_link
+			     (fun() ->
+				      Slave = self(),
+				      Result = check(fun(none)->Fun2()end,
+						     none,
+						     none,
+						     QCT),
+				      Controller ! {Slave, Result}
+			      end),
+		   
+		   receive 
+		       {Slave, Result} ->
+			   %% from Slave
+			   Main ! {Controller, Result };
+		       
+		       {'EXIT', Slave, Reason} ->
+			   %% from Slave
+			   DoReport(fail, Reason),
+			   Main ! {Controller, {failure, Fun, Input, IDom, 
+						QCT#triq{count=Count+1,
+							 result={'EXIT', Reason}}}};
+		       
+		       {'EXIT', _, timeout} ->
+			   %% from Main
+			   erlang:exit(Slave,kill)			     
+		   end
+	   end),
+
+    Yield = receive 
+		{Controller, Result} ->
+		    Result
+		
+	    after Limit ->
+		    
+		    %% Yank the controller (and the slave)
+		    erlang:exit(Controller, timeout),
+		    
+		    %% flush any reply from our queue
+		    receive {Controller, _} -> ignore
+		    after 5 -> ignore end,
+		    
+		    Reason = {timeout, Limit},
+		    DoReport(fail, Reason),
+		    {failure, Fun, Input, IDom, 
+		     QCT#triq{count=Count+1,result={'EXIT', Reason}}}
+    end,
+
+    Yield.
+
 check_forall(GS,_,_,_,#triq{size=GS,count=Count}, _) ->
     {success, Count};
-
-%check_forall(_,_,_,_,#triq{size=Count,count=Count}, _) ->
-%    {success, Count};
 
 check_forall(N,Dom,Fun,Syntax,#triq{size=GS, context=Context}=QCT, Tested) ->
     Input = generate(Dom, 20 + 4*N),
@@ -208,7 +208,11 @@ check_forall(N,Dom,Fun,Syntax,#triq{size=GS, context=Context}=QCT, Tested) ->
 
 		%% it failed, report it!
 		{failure, _, _, _, Ctx} ->
-		    {failure, Fun, Input, Dom, Ctx}
+		    {failure, Fun, Input, Dom, Ctx};
+		
+		true ->
+		    io:format("huh?"),
+		    {success, 1000}
 
 	    end
     end.
