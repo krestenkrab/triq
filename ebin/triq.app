@@ -7,9 +7,11 @@
               triq_sup,
 	      triq,
 	      triq_domain,
-	      triq_simplify]},
+	      triq_simplify,
+	      triq_autoexport,
+	      triq_tests ]},
    {registered,[triq_sup]},
-   {applications, [kernel, stdlib]},
+   {applications, [kernel, stdlib, eunit]},
    {mod, {triq_app,[]}},
    {start_phases, []}]}.
 

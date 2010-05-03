@@ -1,15 +1,24 @@
--module(sample).
+
+%%
+%% Some simple tests
+%%
+
+-module(triq_tests).
 
 -include("triq.hrl").
+%-include("eunit.hrl").
 
--export([prop_append/0, prop_delete_2/0, prop_binop/0, prop_timeout/0]).
+%-export([prop_append/0, prop_delete_2/0, prop_binop/0, prop_timeout/0]).
+
+%% eunit test!
+triq_test() ->
+    true = triq:check(?MODULE).
 
 prop_append() ->
     ?FORALL({Xs,Ys},{list(int()),list(int())},
        ?TRAPEXIT(lists:reverse(Xs++Ys)
 		 ==
 		 lists:reverse(Ys) ++ lists:reverse(Xs))).
-
 					 
 prop_delete_2() ->
   fails(
@@ -26,7 +35,6 @@ inverse('==') -> '/=';
 inverse('=:=') -> '=/=';
 inverse('=/=') -> '=:=';
 inverse('/=') -> '=='.
-    
 
 prop_binop() ->
     ?FORALL({A,B,OP}, {any(),any(),elements(['>','<'])},
@@ -40,6 +48,9 @@ prop_binop() ->
 
 
 prop_timeout() ->
+ fails(
    ?FORALL(N,choose(50,150),
      ?TIMEOUT(100,
-       timer:sleep(N) == ok)).
+       timer:sleep(N) == ok))).
+
+

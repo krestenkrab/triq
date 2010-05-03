@@ -17,6 +17,7 @@
 %%
 
 -define(DOM,'@domain').
+-define(DEFAULT_PROP_PREFIX, "prop_").
 
 -record('@domain',
 	{kind,

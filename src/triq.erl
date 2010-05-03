@@ -18,7 +18,7 @@
 
 -module(triq).
 
--export([check/1,fails/1]).
+-export([check/1,fails/1,module/1]).
 
 -import(triq_domain, [generate/2]).
 
@@ -223,10 +223,11 @@ all(Fun,[H|T]) ->
 	    NonTrue
     end.
 
-check(Module) when is_atom(Module) ->
+
+module(Module) when is_atom(Module) ->
     Info = Module:module_info(exports),
     all(fun({Fun,0}) ->
-		      case atom_to_list(Fun) of
+		case atom_to_list(Fun) of
 			  "prop_" ++ _ ->
 			      io:format("Testing ~p:~p/0~n", [Module, Fun]),
 			      check(Module:Fun());
@@ -234,7 +235,11 @@ check(Module) when is_atom(Module) ->
 		      end;
 		 ({_,_}) -> true
 	      end,
-	     Info);
+	     Info).
+
+
+check(Module) when is_atom(Module) ->
+    module(Module);
 
 
 check(Property) ->

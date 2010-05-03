@@ -43,6 +43,12 @@
 -import(triq, [fails/1]).
 
 
+%%
+-ifndef(TRIQ_NOAUTO).
+-compile({parse_transform, triq_autoexport}).
+-endif.
+
+
 
 
 

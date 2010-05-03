@@ -19,7 +19,7 @@
 
 -module(triq_simplify).
 
--include("triq_domain.hrl").
+-include("triq_internal.hrl").
 
 -export([simplify_value/2, simplify_internal/2]).
 -import(triq_domain, [generate/2, elem_gen/2]).
