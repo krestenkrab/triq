@@ -166,7 +166,7 @@ check_forall(GS,_,_,_,#triq{size=GS,count=Count}) ->
 check_forall(N,Dom,Fun,Syntax,#triq{size=GS,context=Context}=QCT) ->
     Input = generate(Dom,GS),
 
-    case check(Fun,Input,Dom,QCT#triq{size=GS div 2, context=[{Syntax,Fun,Input,Dom}|Context]}) of
+    case check(Fun,Input,Dom,QCT#triq{context=[{Syntax,Fun,Input,Dom}|Context]}) of
 
 	{success,NewCount} -> 
 	    check_forall(N+1, Dom, Fun, Syntax, QCT#triq{count=NewCount});

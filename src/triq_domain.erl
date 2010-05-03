@@ -39,7 +39,7 @@ list(ElemGen) ->
 %% support function for generate({gen_list, ...})
 generate_list(Len,_,_) when Len =< 0 ->
     [];
-generate_list(Len,_,0) ->
+generate_list(_Len,_,0) ->
     [];
 generate_list(Len,EG,GS) ->
     [generate(EG,GS-1) | generate_list(Len-1, EG, GS-1)].
@@ -94,7 +94,7 @@ atom() ->
 
 char() -> 
     #?DOM{kind=char,
-	  generate  = fun(_,GS) -> random:uniform(256)-1 end
+	  generate  = fun(_,_GS) -> random:uniform(256)-1 end
 	 }.
 
 glet(Gen1,FG2) -> 
@@ -160,7 +160,7 @@ elements(L) when is_list(L) ->
 	 generate=fun(#?DOM{kind={elements,L2,Len}},_GS) ->			  
 			  lists:nth(random:uniform(Len), L2)
 		  end,
-	 simplify=fun(Dom,Val) -> Val end}.
+	 simplify=fun(_Dom,Val) -> Val end}.
 
 
 any()  ->
