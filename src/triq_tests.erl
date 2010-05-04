@@ -27,7 +27,7 @@
 -include("triq.hrl").
 
 % use eunit
--include("eunit.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 %% eunit test!
 triq_test() ->
@@ -39,13 +39,12 @@ prop_append() ->
 		 ==
 		 lists:reverse(Ys) ++ lists:reverse(Xs))).
 					 
-prop_delete_2() ->
-  fails(
+prop_delete() ->
     ?FORALL(L,list(int()), 
 	?IMPLIES(L /= [],
 	    ?FORALL(I,elements(L), 
 		?WHENFAIL(io:format("L=~p, I=~p~n", [L,I]),
-		    not lists:member(I,lists:delete(I,L))))))).
+		    not lists:member(I,lists:delete(I,L)))))).
 
 
 inverse('<') -> '>=';

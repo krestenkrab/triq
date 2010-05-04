@@ -1,0 +1,12 @@
+%% This is the application resource file (.app file) for the triq,
+%% application.
+{application, triq, 
+  [{description, "Trifork QuickCheck 0.1.0"},
+   {vsn, "@VSN@"},
+   {modules, [@MODULES@]},
+   {registered,[]},
+   {applications, [kernel,stdlib]},
+   {build_dependencies, []},
+   {env, []}
+]}.
+
