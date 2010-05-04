@@ -5,15 +5,15 @@ Triq (pronounced trick) is a free alternative to [QuviQ eqc](http://www.quviq.co
 
 ## Installation
 
-To use `triq`, right now you have to build it from source using [sinan](http://www.erlware.org/erlware/index.html). Then copy the contents of `_build/development/apps/triq-0.1.0` to your
-erlang lib directory (typically `/usr/local/lib/erlang/lib`):
+To use `triq`, you download the latest version from [here](http://github.com/krestenkrab/triq/downloads), and untar it into your erlang lib directory (typically `/usr/local/lib/erlang/lib`):
 
-<pre>prompt$ cp -r _build/development/apps/triq-0.1.0 /usr/local/lib/erlang/lib
+<pre>prompt$ cd /usr/local/lib/erlang/lib
+propmt$ tar xvzf triq-0.1.0.tgz
 ...</pre>
 
 And you're all set.  Next, to use `triq`, include the header file:
 
-<pre>-include("triq.hrl").</pre>
+<pre>-include_lib("triq/include/triq.hrl").</pre>
 
 And you're ready to write property tests.  An example property could be:
 
@@ -54,11 +54,8 @@ Simplified:
 false
 2> </pre>
 
-Modules compiled with the `triq.hrl` header, auto-export all functions named `prop_*`, which is handy for testing all the properties of a module using `triq:check(?MODULE)`, thus:
-
-    1> triq:check(mymodule).
-
-Also, `triq.hrl` adds a function called `check/0` which does that for you, so the above is equivalent to saying
+Modules compiled with the `triq.hrl` header, auto-export all functions named `prop_*`, 
+and have a function added called `check/0` which runs `triq:check/1` on all the properties in the module.
 
     1> mymodule:check().
 
