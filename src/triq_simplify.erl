@@ -64,19 +64,6 @@ simplify_list(ListDom,List,NAttempts) when is_list(ListDom), is_list(List) ->
 	NewList -> NewList
     end.
 
-%%
-%% atoms...
-%%
-simplify_atom(AtomDom,'',_) when is_atom(AtomDom) ->
-    '';
-simplify_atom(AtomDom,Atom,0) ->
-    Atom;
-
-simplify_atom(AtomDom,Atom,NAttempts) when is_atom(Atom) ->
-    case simplify_member(Atom, AtomDom, random:uniform(len(Atom)+1)) of
-	Atom -> simplify_atom(AtomDom, Atom, NAttempts-1);
-	NewAtom -> NewAtom
-    end.
 
 %%
 %% the meat of the shrinking function
