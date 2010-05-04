@@ -65,7 +65,7 @@ doc: doc/edoc-info
 
 dialyzer:
 	@echo Running dialyzer on sources
-	@dialyzer --src -r src/
+	@dialyzer -pa ebin/ --src -r src/
 
 doc/edoc-info: doc/overview.edoc $(SOURCES) 
 	@erlc -o util/ util/make_doc.erl
@@ -92,3 +92,8 @@ clean:
 
 release: clean all test dialyzer
 	@util/releaser $(APPLICATION) $(VSN)
+
+tar: clean all 
+	tar cvzf $(APPLICATION)-$(VSN).tgz \
+		-s '#^#$(APPLICATION)-$(VSN)/~#' \
+		$(SOURCES) $(HEADERS) $(APP_FILE) $(BEAMS) doc/*
