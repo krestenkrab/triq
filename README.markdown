@@ -1,11 +1,22 @@
 
 # Welcome to Triq -- Trifork QuickCheck for Erlang
 
-Triq (pronounced trick) is a free alternative to [QuviQ eqc](http://www.quviq.com/). QuviQ `eqc` has many features not found in `triq`, but it is open source licensed under the Apache license.
+Triq (pronounced "Trick Check") is a free alternative to [QuviQ
+eqc](http://www.quviq.com/). Triq's API is modelled closely after
+`eqc`, so I recommend their tutorials and slides for an introduction
+to QuickCheck.  Notice that QuviQ `eqc` has many features not found in
+`triq`, but it is open source licensed under the Apache license.  For
+instance, `eqc` has features for reporting, management, probably a
+much better shrinking mechanism, and cool C integration, and
+professional support.
+
 
 ## Installation
 
-To use `triq`, you download the latest version from [here](http://github.com/krestenkrab/triq/downloads), and untar it into your erlang lib directory (typically `/usr/local/lib/erlang/lib`):
+To use `triq`, you download the latest version from
+[here](http://github.com/krestenkrab/triq/downloads), and untar it
+into your erlang lib directory (typically
+`/usr/local/lib/erlang/lib`):
 
 <pre>prompt$ cd /usr/local/lib/erlang/lib
 propmt$ tar xvzf triq-0.1.0.tgz
