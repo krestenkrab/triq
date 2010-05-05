@@ -21,7 +21,7 @@
 -include("triq_internal.hrl").
 
 %% generators
--export([list/1, tuple/1, int/0, real/0, sized/2, elements/1, glet/2, any/0, atom/0, choose/2]).
+-export([list/1, tuple/1, int/0, real/0, sized/2, elements/1, glet/2, any/0, atom/0, choose/2, boolean/0]).
 
 %% using a generator
 -export([generate/2, elem_gen/2]).

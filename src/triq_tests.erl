@@ -33,6 +33,10 @@
 triq_test() ->
     true = triq:check(?MODULE).
 
+boolean_test() ->
+    Unique = fun ordsets:from_list/1,
+    ?assertEqual([false, true], Unique(triq:sample(boolean()))).
+
 prop_append() ->
     ?FORALL({Xs,Ys},{list(int()),list(int())},
        ?TRAPEXIT(lists:reverse(Xs++Ys)
@@ -70,5 +74,3 @@ prop_timeout() ->
    ?FORALL(N,choose(50,150),
      ?TIMEOUT(100,
        timer:sleep(N) == ok))).
-
-

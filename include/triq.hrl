@@ -51,8 +51,7 @@
 %%
 %% import domain functions (a.k.a. generators)
 %%
--import(triq_domain, [list/1, tuple/1, int/0, real/0, elements/1, any/0, atom/0, 
-		      choose/2]).
+-import(triq_domain, [list/1, tuple/1, int/0, real/0, elements/1, any/0, atom/0, choose/2, boolean/0]).
 
 
 %%

@@ -18,7 +18,7 @@
 
 -module(triq).
 
--export([check/1,fails/1,module/1]).
+-export([check/1,fails/1,module/1, sample/1]).
 
 -import(triq_domain, [generate/2]).
 
@@ -241,6 +241,15 @@ module(Module) when is_atom(Module) ->
 	      end,
 	     Info).
 
+
+%%
+%% Generate a sample of output values from a generator.
+%%
+sample(Gen) ->
+    Scaffold = lists:seq(0, 10),
+    % Use a size of 100, since this is the default value
+    % of the size field in the #triq record.
+    [generate(Gen, 100) || _ <- Scaffold].
 
 check(Module) when is_atom(Module) ->
     module(Module);
