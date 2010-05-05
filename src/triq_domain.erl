@@ -77,6 +77,9 @@ real() ->
 	 generate  = fun(_,GS) -> (random:uniform()*GS) - (GS / 2) end
 	}.
 
+%%
+%% Generate a boolean value with equal probability
+%%
 boolean() -> 
     #?DOM{kind=int,
 	  generate  = fun(_,_) -> random:uniform(2) == 1 end
