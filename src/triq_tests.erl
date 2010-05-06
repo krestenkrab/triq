@@ -74,3 +74,11 @@ prop_timeout() ->
    ?FORALL(N,choose(50,150),
      ?TIMEOUT(100,
        timer:sleep(N) == ok))).
+
+
+prop_sized() ->
+    ?FORALL(T, ?SIZED(S, {true, choose(0,S)}),
+	    (erlang:tuple_size(T) == 2)
+	    and
+	    begin {true, Int} = T, Int >= 0 end
+	   ).
