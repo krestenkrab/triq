@@ -24,7 +24,7 @@
 -type domain() :: any().
 
 %% generators
--export([list/1, tuple/1, int/0, real/0, sized/2, elements/1, any/0, atom/0, choose/2, boolean/0]).
+-export([list/1, tuple/1, int/0, real/0, sized/1, elements/1, any/0, atom/0, choose/2, boolean/0]).
 
 %% using a generator
 -export([generate/2, component_domain/2, dom_let/2]).
@@ -192,16 +192,11 @@ generate_internal(V,_) when is_atom(V);
 
 
 
-
-sized(Size,Gen) ->
-    #?DOM{kind={sized, Gen, Size},
-	  generate=fun(#?DOM{kind={sized,Gen2,Size2}}, _GS) ->
-			   generate(Gen2, Size2)
-		   end,
-	  simplify=fun(#?DOM{kind={sized,Gen2,_}},Val) ->
-			   triq_simplify:simplify_value (Gen2,Val)
-		   end
-	 }.
+-spec(sized( fun((integer()) -> domain()) ) -> domain()).	     
+sized(Fun) ->
+    #?DOM{kind=sized,
+	  generate=fun(_,GS) -> generate(Fun(GS),GS) end
+	 }. 
 
 %% @doc Domain specified by a list of members.
 %% Generating values from this domain yields a random

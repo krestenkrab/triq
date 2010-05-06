@@ -46,7 +46,7 @@
 -endif.
 
 -define(SIZED(Size,Gen),
-	triq_domain:sized(Size,Gen)).
+	triq_domain:sized(fun(Size) -> Gen end)).
 
 %%
 %% import domain functions (a.k.a. generators)
