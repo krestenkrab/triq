@@ -44,11 +44,12 @@ prop_append() ->
 		 lists:reverse(Ys) ++ lists:reverse(Xs))).
 					 
 prop_delete() ->
+  fails(
     ?FORALL(L,list(int()), 
 	?IMPLIES(L /= [],
 	    ?FORALL(I,elements(L), 
 		?WHENFAIL(io:format("L=~p, I=~p~n", [L,I]),
-		    not lists:member(I,lists:delete(I,L)))))).
+		    not lists:member(I,lists:delete(I,L))))))).
 
 
 inverse('<') -> '>=';
