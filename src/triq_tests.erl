@@ -43,8 +43,8 @@ prop_append() ->
 		 ==
 		 lists:reverse(Ys) ++ lists:reverse(Xs))).
 					 
-prop_delete() ->
-  fails(
+delete_test() ->
+    false = triq:check(
     ?FORALL(L,list(int()), 
 	?IMPLIES(L /= [],
 	    ?FORALL(I,elements(L), 
@@ -60,7 +60,7 @@ inverse('=/=') -> '=:=';
 inverse('/=') -> '=='.
 
 prop_binop() ->
-    ?FORALL({A,B,OP}, {any(),any(),elements(['>','<'])},
+    ?FORALL({A,B,OP}, {any(),any(),elements(['>','<','==','=:=','=/=','/='])},
 	    erlang:OP(A,B) 
 	    ==
 	    begin 
@@ -110,4 +110,9 @@ prop_suchthat() ->
 	    X < Y).
 
 
-
+tuple_failure_test() ->
+    false = check(?FORALL(T, {int()},
+			  begin
+			      {V} = T,
+			      V > 0
+			  end)).
