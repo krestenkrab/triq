@@ -348,8 +348,17 @@ simplify(Fun,Input,InputDom,GS,Context,Tested) ->
 .
 
 %%
-%% A Property which succeeds when its argument fails.
+%% 
 %%
+%%--------------------------------------------------------------------
+%% @doc
+%% A Property which succeeds when its argument fails, and fails
+%% if the argument succeeds.  This is very handy for properties 
+%% that <em>should fail</em>. 
+%%
+%% @spec fails( property() ) -> property()
+%% @end
+%%--------------------------------------------------------------------
 fails(Prop) ->
     {'prop:fails', Prop}.
 
