@@ -83,3 +83,31 @@ prop_sized() ->
 	    and
 	    begin {true, Int} = T, Int >= 0 end
 	   ).
+
+prop_simple1() ->
+    ?FORALL(V, [], V == []).
+
+prop_simple2() ->
+    ?FORALL(V, {}, V == {}).
+
+prop_simple3() ->
+    ?FORALL(V, atom(), 
+	    ?IMPLIES(V /= '',
+		     begin
+			 [CH|_] = erlang:atom_to_list(V),
+			 (CH >= $a) and (CH =< $z)
+		     end)).
+
+
+%%
+%% This should be able to succeed
+%%
+prop_suchthat() ->
+    ?FORALL({X,Y}, 
+	    ?SUCHTHAT({XX,YY}, 
+		      {int(),int()}, 
+		      XX < YY), 
+	    X < Y).
+
+
+

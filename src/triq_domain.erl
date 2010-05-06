@@ -24,10 +24,11 @@
 -type domain() :: any().
 
 %% generators
--export([list/1, tuple/1, int/0, real/0, sized/1, elements/1, any/0, atom/0, choose/2, boolean/0]).
+-export([list/1, tuple/1, int/0, real/0, sized/1, elements/1, any/0, atom/0, choose/2, boolean/0, char/0]).
 
 %% using a generator
--export([generate/2, component_domain/2, dom_let/2]).
+-export([generate/2, component_domain/2, dom_let/2, bind/2, suchthat/2]).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -40,19 +41,24 @@
 list(ElemDom) ->
     #?DOM{kind={list,ElemDom},
 	generate   = fun(#?DOM{kind={list,EG}},GS) -> 
-				Len = random:uniform(1+ (GS div 3))-1,
+				Len = random:uniform(GS)-1,
 				generate_list(Len, EG, GS)
 		     end
 	 }.
 
 
+%% GenSize for elements inside a list (or tuple)
+list_element_gensize(N) when N<3 ->
+    1;
+list_element_gensize(N) ->
+    N div 2.
+
+
 %% support function for generate({gen_list, ...})
 generate_list(Len,_,_) when Len =< 0 ->
     [];
-generate_list(_Len,_,0) ->
-    [];
 generate_list(Len,EG,GS) ->
-    [generate(EG,GS-1) | generate_list(Len-1, EG, GS-1)].
+    [generate(EG,list_element_gensize(GS)) | generate_list(Len-1, EG, GS)].
 
 
 
@@ -69,7 +75,7 @@ generate_list(Len,EG,GS) ->
 tuple(ElemDom) ->
     #?DOM{kind={tuple,ElemDom},
 	generate   = fun(#?DOM{kind={tuple,EG}},GS) -> 
-				Len = random:uniform(1+ (GS div 3))-1,
+				Len = random:uniform(GS)-1,
 				list_to_tuple(generate_list(Len, EG, GS))
 		     end}.
 
@@ -128,20 +134,23 @@ rand(Min,Max,GS) ->
 -spec(atom() -> domain()).
 atom() -> 
     #?DOM{kind=atom,
-	  generate  = fun(_,GS) -> erlang:list_to_atom(generate(list(char()), rand(0,255,GS))) end
+	  generate = fun(_,GS) ->
+	      erlang:list_to_atom(generate_list(rand(0,255,GS), char(), GS)) 
+	  end
 	 }.
 
-%% @doc Returns the domain of characters i.e., integers in the range `0..255'.
+%% @doc Returns the domain of characters i.e., integers in the range `$a..$z'.
 char() -> 
     #?DOM{kind=char,
-	  generate  = fun(_,_GS) -> random:uniform(256)-1 end
+	  generate  = fun(_,_GS) -> $a + random:uniform($z - $a + 1)-1 end,
+	  simplify = fun(_,V) when V=:=$a,V=:=$b,V=:=$c -> V; (_,N) -> N-1 end
 	 }.
 
 %% @doc Support function for the `LET(Vars,Dom1,Dom2)' macro.
--spec(dom_let(domain(), function()) -> domain()).
+-spec(dom_let(domain(), fun( ( any() ) -> domain() )) -> domain()).
 dom_let(Gen1,FG2) -> 
-    #?DOM{kind={glet,Gen1,FG2},
-	 generate  = fun(#?DOM{kind={glet,G1,G2}},GS) -> 
+    #?DOM{kind={dom_let,Gen1,FG2},
+	 generate  = fun(#?DOM{kind={dom_let,G1,G2}},GS) -> 
 			     Va = generate(G1, GS),
 			     G = G2(Va),
 			     generate(G,GS)
@@ -190,13 +199,39 @@ generate_internal(V,_) when is_atom(V);
     V.
 
 
+bind(#?DOM{kind={sized,Fun}}=_Dom,GenSize) ->
+    Fun(GenSize);
+
+bind(#?DOM{kind={dom_let,Gen1,FG2}}=_Dom,GenSize) ->
+    Va = generate(bind(Gen1,GenSize),GenSize),
+    FG2(Va);
+
+bind(Dom,_GenSize) ->
+    Dom.
 
 
 -spec(sized( fun((integer()) -> domain()) ) -> domain()).	     
 sized(Fun) ->
-    #?DOM{kind=sized,
+    #?DOM{kind={sized,Fun},
 	  generate=fun(_,GS) -> generate(Fun(GS),GS) end
 	 }. 
+
+suchthat_loop(0,_,_,_) ->
+    erlang:exit(suchthat_failed);
+
+suchthat_loop(N,Dom,Fun,GS) ->
+    Val = generate(Dom,GS),
+    case Fun(Val) of
+	true -> Val;
+	_ -> suchthat_loop(N-1, Dom, Fun,GS)
+    end.
+	     
+    
+
+suchthat(Dom,Fun) ->
+    #?DOM{kind=suchthat,
+	  generate=fun(_,GS) -> suchthat_loop(100,bind(Dom,GS),Fun,GS) end
+	 }.			   
 
 %% @doc Domain specified by a list of members.
 %% Generating values from this domain yields a random
@@ -218,12 +253,12 @@ any()  ->
     #?DOM{kind=any,
 	  generate=fun(#?DOM{kind=any}=Dom,GS) ->
 			   case random:uniform(6) of
-			       1 -> generate(int(),GS div 2);
-			       2 -> generate(real(),GS div 2);
-			       3 -> generate(list(Dom),GS div 2);
-			       4 -> generate(tuple(Dom),GS div 2);
-			       5 -> generate(boolean(),GS div 2);
-			       6 -> generate(atom(),GS div 2)
+			       1 -> generate(int(),GS);
+			       2 -> generate(real(),GS);
+			       3 -> generate(list(Dom),random:uniform(GS));
+			       4 -> generate(tuple(Dom),random:uniform(GS));
+			       5 -> generate(boolean(),GS);
+			       6 -> generate(atom(),GS)
 			   end
 		   end
 	 }.

@@ -115,7 +115,7 @@ check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 	    end;
 	
 	{'prop:forall', Dom2, Syntax2, Fun2, Body2} ->
-	    check_forall(0, Dom2, Fun2, Syntax2, QCT#triq{body=Body2}, gb_sets:new());
+	    check_forall(0, 100, Dom2, Fun2, Syntax2, QCT#triq{body=Body2}, gb_sets:new());
 
 	Any ->
 	    DoReport(fail,Any),
@@ -186,25 +186,32 @@ check_timeout(Fun,Input,IDom,Limit,Fun2,#triq{count=Count,report=DoReport}=QCT) 
 
     Yield.
 
-check_forall(GS,_,_,_,#triq{size=GS,count=Count}, _) ->
+check_forall(N,N,_,_,_,#triq{count=Count}, _) ->
     {success, Count};
 
-check_forall(N,Dom,Fun,Syntax,#triq{size=GS, context=Context}=QCT, Tested) ->
-    Input = generate(Dom, 20 + 4*N),
+check_forall(N,NMax,XDom,Fun,Syntax,#triq{context=Context}=QCT, Tested) ->
+
+    GenSize = 2 + 2*N,
+
+    %% if input domain is one of LET or SIZED, then it
+    %% needs to be resolved here before we continue.
+    Dom = triq_domain:bind(XDom,GenSize),
+
+    Input = generate(Dom, GenSize),
 
     IsTested = gb_sets:is_member(Input,Tested),
     if 
 	IsTested ->
-	    check_forall(N+1,Dom,Fun,Syntax,QCT,Tested);
+	    check_forall(N+1,NMax,Dom,Fun,Syntax,QCT,Tested);
 
 	true ->
-	    case check(Fun,Input,Dom,QCT#triq{size=GS div 2, 
+	    case check(Fun,Input,Dom,QCT#triq{size=GenSize, 
 					      context=[{Syntax,Fun,Input,Dom}|Context]}) of
 
 		%% it did not fail, try again with N := N+1
 		{success,NewCount} -> 
 		    NewTested = gb_sets:add(Input,Tested),
-		    check_forall(N+1, Dom, Fun, Syntax, QCT#triq{count=NewCount}, NewTested);
+		    check_forall(N+1, NMax,Dom, Fun, Syntax, QCT#triq{count=NewCount}, NewTested);
 
 		%% it failed, report it!
 		{failure, _, _, _, Ctx} ->
