@@ -228,6 +228,15 @@ all(Fun,[H|T]) ->
     end.
 
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Run QuickCheck on all properties in a module.
+%% If all checks succeed, true is returned; otherwise return the
+%% result of the first check that fails.
+%%
+%% @spec module( atom() ) -> true | any()
+%% @end
+%%--------------------------------------------------------------------
 module(Module) when is_atom(Module) ->
     Info = Module:module_info(exports),
     all(fun({Fun,0}) ->
@@ -242,15 +251,30 @@ module(Module) when is_atom(Module) ->
 	     Info).
 
 
-%%
+%%--------------------------------------------------------------------
+%% @doc
 %% Generate a sample of output values from a generator.
 %%
+%% @spec sample( domain() ) -> [any()]
+%% @end
+%%--------------------------------------------------------------------
 sample(Gen) ->
     Scaffold = lists:seq(0, 10),
     % Use a size of 100, since this is the default value
     % of the size field in the #triq record.
     [generate(Gen, 100) || _ <- Scaffold].
 
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Run QuickCheck.  If argument is an atom, it runs triq:module/1
+%% checking all the properties in said module; otherwise if the 
+%% argument is a property, it runs QuickCheck on said property.
+%%
+%% @spec check( atom() | property() ) -> any()
+%% @end
+%%--------------------------------------------------------------------
 check(Module) when is_atom(Module) ->
     module(Module);
 
@@ -356,9 +380,6 @@ simplify(Fun,Input,InputDom,GS,Context,Tested) ->
     end
 .
 
-%%
-%% 
-%%
 %%--------------------------------------------------------------------
 %% @doc
 %% A Property which succeeds when its argument fails, and fails

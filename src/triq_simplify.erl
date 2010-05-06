@@ -22,7 +22,7 @@
 -include("triq_internal.hrl").
 
 -export([simplify_value/2, simplify_internal/2]).
--import(triq_domain, [generate/2, elem_gen/2]).
+-import(triq_domain, [generate/2, component_domain/2]).
 
 %%
 %% public API looks like this
@@ -186,7 +186,7 @@ simplify_member(List, ListDom, HowMany) when is_list(List) ->
     %%
     RemIdx = random:uniform(Len),    
     Elm = lists:nth(RemIdx, List),
-    ElmDom = elem_gen(RemIdx, ListDom),
+    ElmDom = component_domain(RemIdx, ListDom),
     NextList = case RemIdx of
 	1 -> 
 	    [simplify_value(ElmDom,Elm)] ++ lists:sublist(List,2,Len-1);

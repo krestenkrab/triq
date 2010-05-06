@@ -42,7 +42,7 @@
 %%% LET is also defined by eunit; what to do?
 -ifndef(LET).
 -define(LET(X,Gen1,Gen2), 
-	triq_domain:glet(Gen1, fun(X)->Gen2 end}).
+	triq_domain:dom_let(Gen1, fun(X)->Gen2 end}).
 -endif.
 
 -define(SIZED(Size,Gen),

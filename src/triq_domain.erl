@@ -20,15 +20,25 @@
 
 -include("triq_internal.hrl").
 
+%% @type domain(). A domain of values.
+-type domain() :: any().
+
 %% generators
--export([list/1, tuple/1, int/0, real/0, sized/2, elements/1, glet/2, any/0, atom/0, choose/2, boolean/0]).
+-export([list/1, tuple/1, int/0, real/0, sized/2, elements/1, any/0, atom/0, choose/2, boolean/0]).
 
 %% using a generator
--export([generate/2, elem_gen/2]).
+-export([generate/2, component_domain/2, dom_let/2]).
 
-%% generator for lists 
-list(ElemGen) ->
-    #?DOM{kind={list,ElemGen},
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns the domain of lists of the argument.  
+%% For example, `list(int())' yields the domain of lists of integers.
+%%
+%% @spec list( domain() ) -> domain()
+%% @end
+%%--------------------------------------------------------------------
+list(ElemDom) ->
+    #?DOM{kind={list,ElemDom},
 	generate   = fun(#?DOM{kind={list,EG}},GS) -> 
 				Len = random:uniform(1+ (GS div 3))-1,
 				generate_list(Len, EG, GS)
@@ -46,39 +56,60 @@ generate_list(Len,EG,GS) ->
 
 
 
-tuple(ElemGen) ->
-    #?DOM{kind={tuple,ElemGen},
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns the domain of tuples of the argument.  
+%% For example, `tuple(int())' yields the domain of tuple of integers.
+%% Notice that `{int(),int()}' also describes a domain og tuples of integer,
+%% but in this case only two-tuples.
+%%
+%% @spec tuple( domain() ) -> domain()
+%% @end
+%%--------------------------------------------------------------------
+tuple(ElemDom) ->
+    #?DOM{kind={tuple,ElemDom},
 	generate   = fun(#?DOM{kind={tuple,EG}},GS) -> 
 				Len = random:uniform(1+ (GS div 3))-1,
 				list_to_tuple(generate_list(Len, EG, GS))
 		     end}.
 
-elem_gen(_, #?DOM{kind=any}=ElemGen) ->
-    ElemGen;
-elem_gen(_, #?DOM{kind={list,ElemGen}}) ->
-    ElemGen;
-elem_gen(_, #?DOM{kind={tuple,ElemGen}}) ->
-    ElemGen;
-elem_gen(N, Gen) when is_tuple(Gen), N > 0, tuple_size(Gen) >= N ->
+%% @doc Return the Nth component domain of AggrDom.
+%% AggrDom must be a list domain, a tuple domain, or the any domain.
+%% For example `component_domain(2, {int(),boolean()})' is `boolean()'.
+%% @spec component_domain(Nth::int(),AggrDom::domain()) -> domain()
+%%    
+component_domain(_, #?DOM{kind=any}=ElemDom) ->
+    ElemDom;
+component_domain(_, #?DOM{kind={list,ElemDom}}) ->
+    ElemDom;
+component_domain(_, #?DOM{kind={tuple,ElemDom}}) ->
+    ElemDom;
+component_domain(N, Gen) when is_tuple(Gen), N > 0, tuple_size(Gen) >= N ->
     element(N,Gen);
-elem_gen(N, Gen) when is_list(Gen), N > 0, length(Gen) >= N ->
+component_domain(N, Gen) when is_list(Gen), N > 0, length(Gen) >= N ->
     lists:nth(N,Gen).
 
 generate_int(_,GS) ->
     random:uniform(GS) - (GS div 2).
 
+%% @doc The domain of integers.
+-spec(int() -> domain()).
+	     
 int() -> 
     #?DOM{kind=int,
 	 generate  = fun generate_int/2
 	}.
 
+%% @doc The domain of (64 bit) floats.
 real() -> 
     #?DOM{kind=real,
 	 generate  = fun(_,GS) -> (random:uniform()*GS) - (GS / 2) end
 	}.
 
 %%
-%% Generate a boolean value with equal probability
+%% @doc The domain of booleans.
+%% Generate a boolean true or false with equal probability.
+%% @spec boolean() -> domain()
 %%
 boolean() -> 
     #?DOM{kind=int,
@@ -92,17 +123,23 @@ rand(Min,Max,GS) ->
     end.
 	
 
+%% @doc Returns the domain of atoms.
+%% @spec atom() -> domain()
+-spec(atom() -> domain()).
 atom() -> 
     #?DOM{kind=atom,
 	  generate  = fun(_,GS) -> erlang:list_to_atom(generate(list(char()), rand(0,255,GS))) end
 	 }.
 
+%% @doc Returns the domain of characters i.e., integers in the range `0..255'.
 char() -> 
     #?DOM{kind=char,
 	  generate  = fun(_,_GS) -> random:uniform(256)-1 end
 	 }.
 
-glet(Gen1,FG2) -> 
+%% @doc Support function for the `LET(Vars,Dom1,Dom2)' macro.
+-spec(dom_let(domain(), function()) -> domain()).
+dom_let(Gen1,FG2) -> 
     #?DOM{kind={glet,Gen1,FG2},
 	 generate  = fun(#?DOM{kind={glet,G1,G2}},GS) -> 
 			     Va = generate(G1, GS),
@@ -166,6 +203,13 @@ sized(Size,Gen) ->
 		   end
 	 }.
 
+%% @doc Domain specified by a list of members.
+%% Generating values from this domain yields a random
+%% element from the given list.
+%% @spec elements(Members::list(Member)) -> domain()
+%% where 
+%%    Member = any()
+-spec(elements(list(any())) -> any()).	      
 elements([]) -> undefined;
 elements(L) when is_list(L) ->
     #?DOM{kind={elements,L,length(L)}, 
