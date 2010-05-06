@@ -21,7 +21,7 @@
 -include("triq_internal.hrl").
 
 %% generators
--export([list/1, tuple/1, int/0, real/0, sized/2, elements/1, glet/2, any/0, atom/0, choose/2]).
+-export([list/1, tuple/1, int/0, real/0, sized/2, elements/1, glet/2, any/0, atom/0, choose/2, boolean/0]).
 
 %% using a generator
 -export([generate/2, elem_gen/2]).
@@ -77,6 +77,9 @@ real() ->
 	 generate  = fun(_,GS) -> (random:uniform()*GS) - (GS / 2) end
 	}.
 
+%%
+%% Generate a boolean value with equal probability
+%%
 boolean() -> 
     #?DOM{kind=int,
 	  generate  = fun(_,_) -> random:uniform(2) == 1 end
