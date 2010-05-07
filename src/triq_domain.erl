@@ -24,7 +24,8 @@
 -type domain() :: any().
 
 %% generators
--export([list/1, tuple/1, int/0, real/0, sized/1, elements/1, any/0, atom/0, choose/2, boolean/0, char/0]).
+-export([list/1, tuple/1, int/0, real/0, sized/1, elements/1, any/0, atom/0, choose/2,
+	 oneof/1, boolean/0, char/0]).
 
 %% using a generator
 -export([generate/2, component_domain/2, dom_let/2, bind/2, suchthat/2]).
@@ -265,6 +266,15 @@ any()  ->
 			   end
 		   end
 	 }.
+
+%% @doc Returns the domain of the union of the domains in Gs.
+%% @spec oneof(Gs::list(domain()))  -> domain()
+oneof(Gs) when is_list(Gs) ->
+    #?DOM{kind={oneof, Gs, length(Gs)},
+	  generate=fun(#?DOM{kind={oneof,Gs1,Len}},GS) ->			  
+			   generate(lists:nth(random:uniform(Len), Gs1), GS)
+		   end,
+	  simplify=fun(_Dom,Val) -> Val end}.
 
 %% @doc Returns the domain of integers in the range M =&lt; X =&lt; N
 %% @spec choose(M,N) -> domain()
