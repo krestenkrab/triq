@@ -99,7 +99,7 @@ generate_int(_,GS) ->
     random:uniform(GS) - (GS div 2).
 
 %% @doc The domain of integers.
--spec(int() -> domain()).
+%% @spec(int() -> domain()).
 	     
 int() -> 
     #?DOM{kind=int,
@@ -107,6 +107,7 @@ int() ->
 	}.
 
 %% @doc The domain of (64 bit) floats.
+%% @spec real() -> domain()
 real() -> 
     #?DOM{kind=real,
 	 generate  = fun(_,GS) -> (random:uniform()*GS) - (GS / 2) end
@@ -140,6 +141,7 @@ atom() ->
 	 }.
 
 %% @doc Returns the domain of characters i.e., integers in the range `$a..$z'.
+%% @spec char() -> domain()
 char() -> 
     #?DOM{kind=char,
 	  generate  = fun(_,_GS) -> $a + random:uniform($z - $a + 1)-1 end,
@@ -249,6 +251,7 @@ elements(L) when is_list(L) ->
 	 simplify=fun(_Dom,Val) -> Val end}.
 
 
+%% @spec any()  -> domain()
 any()  ->
     #?DOM{kind=any,
 	  generate=fun(#?DOM{kind=any}=Dom,GS) ->
@@ -263,6 +266,8 @@ any()  ->
 		   end
 	 }.
 
+%% @doc Returns the domain of integers in the range M =&lt; X =&lt; N
+%% @spec choose(M,N) -> domain()
 choose(M,N) when is_integer(M), is_integer(N), M<N ->
     #?DOM{kind={choose,M,N},
 	  generate=fun(_,_) ->
