@@ -25,7 +25,7 @@
 
 %% generators
 -export([list/1, tuple/1, int/0, real/0, sized/1, elements/1, any/0, atom/0, choose/2,
-	 oneof/1, boolean/0, char/0]).
+	 oneof/1, boolean/0, char/0, return/1]).
 
 %% using a generator
 -export([generate/2, component_domain/2, dom_let/2, bind/2, suchthat/2]).
@@ -288,3 +288,8 @@ choose(M,N) when is_integer(M), is_integer(N), M<N ->
 		      (_Dom,_) -> 
 			   M
 		   end}.
+
+return(Val) -> 
+    #?DOM{kind={return, Val},
+	  generate  = fun(_,_) -> Val end
+	 }.
