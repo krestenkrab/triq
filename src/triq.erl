@@ -190,7 +190,7 @@ check_timeout(Fun,Input,IDom,Limit,Fun2,#triq{count=Count,report=DoReport}=QCT) 
 check_forall(N,N,_,_,_,#triq{count=Count}, _) ->
     {success, Count};
 
-check_forall(N,NMax,XDom,Fun,Syntax,#triq{context=Context}=QCT, Tested) ->
+check_forall(N,NMax,XDom,Fun,Syntax,#triq{context=Context,report=DoReport,count=Count}=QCT, Tested) ->
 
     GenSize = 2 + 2*N,
 
@@ -203,7 +203,8 @@ check_forall(N,NMax,XDom,Fun,Syntax,#triq{context=Context}=QCT, Tested) ->
     IsTested = gb_sets:is_member(Input,Tested),
     if 
 	IsTested ->
-	    check_forall(N+1,NMax,Dom,Fun,Syntax,QCT,Tested);
+	    DoReport(skip,true),
+	    check_forall(N+1,NMax,Dom,Fun,Syntax,QCT#triq{count=Count+1},Tested);
 
 	true ->
 	    case check(Fun,Input,Dom,QCT#triq{size=GenSize, 
