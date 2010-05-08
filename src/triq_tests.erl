@@ -129,6 +129,18 @@ oneof_test() ->
     %% Note: 0 == 0.0
     ?assert((X == 0) and (Y == 0)).
 
+%%
+%% This test makes sure that X shrinks only to 3. 
+%%
+oneof2_test() ->
+    [X] = triq:counterexample
+	    (?FORALL(X, 
+		     oneof([choose(3,7)]),
+		     false)),
+    3 = X.
+
+
+    
 
 
     
