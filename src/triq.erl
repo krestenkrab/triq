@@ -18,7 +18,8 @@
 
 -module(triq).
 
--export([check/1,fails/1,module/1, sample/1]).
+-export([check/1,fails/1,module/1, sample/1, 
+	 counterexample/0, counterexample/1]).
 
 -import(triq_domain, [generate/2]).
 
@@ -319,8 +320,8 @@ check(Property) ->
 	    put('triq:counterexample', CounterExample),
 
 	    io:format("Simplified:~n"),
-	    print_counterexample(CounterExample),
-
+	    print_counter_example(CounterExample),
+	    
 	    Error;
 
 	{success, Count} ->
@@ -330,11 +331,20 @@ check(Property) ->
     end
 .
 
-print_counterexample(CounterExample) ->
+print_counter_example(CounterExample) ->
     lists:foreach(fun({Syntax,_Fun,Val,_Dom}) ->
 			  io:format("\t~s = ~w~n", [Syntax,Val])
 		  end,
 		  CounterExample).
+
+counterexample(Prop) ->
+    case check(Prop) of
+	true -> true;
+	_ -> counterexample()
+    end.
+
+counterexample() ->
+    [ Val || {_,_,Val,_} <- get('triq:counterexample') ].
 
 %%
 %% when the property has nested ?FORALL statements,
