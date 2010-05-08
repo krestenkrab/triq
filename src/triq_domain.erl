@@ -203,11 +203,11 @@ generate_internal(V,_) when is_atom(V);
 
 
 bind(#?DOM{kind={sized,Fun}}=_Dom,GenSize) ->
-    Fun(GenSize);
+    bind(Fun(GenSize),GenSize);
 
 bind(#?DOM{kind={dom_let,Gen1,FG2}}=_Dom,GenSize) ->
     Va = generate(bind(Gen1,GenSize),GenSize),
-    FG2(Va);
+    bind(FG2(Va),GenSize);
 
 bind(#?DOM{kind={oneof,Gs1,Len}}, GenSize) ->
     bind (lists:nth(random:uniform(Len), Gs1), GenSize);
@@ -276,8 +276,7 @@ oneof(Gs) when is_list(Gs) ->
     #?DOM{kind={oneof, Gs, length(Gs)},
 	  generate=fun(#?DOM{kind={oneof,Gs1,Len}},GS) ->			  
 			   generate(lists:nth(random:uniform(Len), Gs1), GS)
-		   end,
-	  simplify=fun(_Dom,Val) -> Val end}.
+		   end}.
 
 %% @doc Returns the domain of integers in the range M =&lt; X =&lt; N
 %% @spec choose(M,N) -> domain()
