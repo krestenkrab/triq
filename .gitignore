@@ -1,2 +1,8 @@
 _build
 *~
+ebin
+doc/*.html
+doc/edoc-info
+doc/erlang.png
+doc/stylesheet.css
+util/make_doc.beam
