@@ -289,6 +289,8 @@ choose(M,N) when is_integer(M), is_integer(N), M<N ->
 			   M
 		   end}.
 
+%% @doc Returns the doamin of Val.
+%% @spec return(Val) -> domain()
 return(Val) -> 
     #?DOM{kind={return, Val},
 	  generate  = fun(_,_) -> Val end
