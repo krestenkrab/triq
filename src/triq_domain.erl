@@ -209,6 +209,9 @@ bind(#?DOM{kind={dom_let,Gen1,FG2}}=_Dom,GenSize) ->
     Va = generate(bind(Gen1,GenSize),GenSize),
     FG2(Va);
 
+bind(#?DOM{kind={oneof,Gs1,Len}}, GenSize) ->
+    bind (lists:nth(random:uniform(Len), Gs1), GenSize);
+
 bind(Dom,_GenSize) ->
     Dom.
 

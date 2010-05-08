@@ -116,3 +116,19 @@ tuple_failure_test() ->
 			      {V} = T,
 			      V > 0
 			  end)).
+
+oneof_test() ->
+    [{X,Y}] = triq:counterexample(
+	      ?FORALL({X,Y}, 
+		      ?SUCHTHAT({A,B},
+				{oneof([int(),real()]),
+				 oneof([int(),real()])},
+				A < B),
+		      is_integer(X) == is_integer(Y))),
+
+    %% Note: 0 == 0.0
+    ?assert((X == 0) and (Y == 0)).
+
+
+
+    
