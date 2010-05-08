@@ -139,6 +139,14 @@ oneof2_test() ->
 		     false)),
     3 = X.
 
+%%
+%% Test that vector doesn't shrink the length
+%%
+vector_test() ->
+    [L] = triq:counterexample
+            (?FORALL(L, vector(4, choose(3,7)),
+		     false)),
+    [3,3,3,3] = L.
 
     
 

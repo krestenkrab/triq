@@ -372,6 +372,9 @@ simplify(Fun,Input,InputDom,GS,Context,Tested) ->
     %% return it's Input argument...
     %%
     NewInput = triq_simplify:simplify_value(InputDom,Input),
+
+    %%io:format("simp ~p -> ~p (~p)~n", [Input, NewInput, InputDom]),
+
     IsTested = gb_sets:is_member(NewInput,Tested),
 
     if 

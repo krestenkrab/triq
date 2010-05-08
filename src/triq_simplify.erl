@@ -50,15 +50,15 @@ simplify_tuple(TupDom,Tup,NAttempts) when is_tuple(TupDom), is_tuple(Tup) ->
     end.
 
 %%
-%% when the domain is a list...
+%% Simplify a list by simplifying one of the elements
 %%
-simplify_list(ListDom,[],_) when is_list(ListDom) ->
+simplify_list(_ListDom,[],_) ->
     [];
 
-simplify_list(ListDom,List,0) when is_list(ListDom) ->
+simplify_list(_ListDom,List,0) ->
     List;
 
-simplify_list(ListDom,List,NAttempts) when is_list(ListDom), is_list(List) ->
+simplify_list(ListDom,List,NAttempts) when is_list(List) ->
     case simplify_member(List, ListDom, random:uniform(len(List)+1)) of
 	List -> simplify_list(ListDom, List, NAttempts-1);
 	NewList -> NewList
@@ -89,7 +89,11 @@ simplify_internal(#?DOM{kind=any}=Dom, Val) when is_tuple(Val) ->
 simplify_internal(#?DOM{kind=any}=Dom, Val) when is_atom(Val) ->
     list_to_atom(simplify_internal(Dom,atom_to_list(Val)));
 
+simplify_internal(#?DOM{kind=atom}=Dom, Val) when is_atom(Val) ->
+    list_to_atom(simplify_internal(Dom,atom_to_list(Val)));
 
+simplify_internal(#?DOM{kind={vector,_,_}}=Dom, Val) ->
+    simplify_list(Dom,Val,100);
 
 simplify_internal(TupDom,Tup) when is_tuple(TupDom), is_tuple(Tup) ->
     %% try to simplify it 10 times...
@@ -178,7 +182,7 @@ remove_any(Tup) when is_tuple(Tup) ->
     
 %% simplify HowMany element(s) of the list
 simplify_member(Any, _Dom, 0) -> Any;
-simplify_member(List, ListDom, HowMany) when is_list(List) ->
+simplify_member(List, ListDom, HowMany) when is_list(List), not is_atom(List) ->
     Len = length(List),
 
     %%
@@ -205,7 +209,8 @@ simplify_member(Atom, AtomDom, HowMany) when is_atom(Atom) ->
     erlang:list_to_atom(simplify_member(erlang:atom_to_list(Atom), AtomDom, HowMany)).
     
 
+len(T) when is_atom(T) -> length(atom_to_list(T));
 len(T) when is_tuple(T) -> erlang:tuple_size(T);
-len(T) when is_list(T) -> length(T);
-len(T) when is_atom(T) -> length(atom_to_list(T)).
+len(T) when is_list(T) -> length(T)
+.
 
