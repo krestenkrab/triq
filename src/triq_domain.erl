@@ -143,7 +143,7 @@ atom() ->
 char() -> 
     #?DOM{kind=char,
 	  generate  = fun(_,_GS) -> $a + random:uniform($z - $a + 1)-1 end,
-	  simplify = fun(_,V) when V=:=$a,V=:=$b,V=:=$c -> V; (_,N) -> N-1 end
+	  simplify = fun(_,V) when V=:=$a;V=:=$b;V=:=$c -> V; (_,N) -> N-1 end
 	 }.
 
 %% @doc Support function for the `LET(Vars,Dom1,Dom2)' macro.
