@@ -149,6 +149,13 @@ vector_test() ->
     [3,3,3,3] = L.
 
     
+%%
+%% Test binary shrinking
+%%
+binary_test() ->
+    [X] = triq:counterexample
+	    (?FORALL(X, binary(2), false)),
+    <<0,0>> = X.
 
 
     
