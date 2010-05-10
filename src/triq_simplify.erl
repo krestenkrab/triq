@@ -156,7 +156,7 @@ simplify_dom_list(AggrDom,Aggr,N) ->
     case NewAggr of 
 	Aggr -> simplify_dom_list(AggrDom,Aggr,N-1);
 	NewAggr -> NewAggr
-    end    .
+    end.
 
 
 
@@ -211,6 +211,5 @@ simplify_member(Atom, AtomDom, HowMany) when is_atom(Atom) ->
 
 len(T) when is_atom(T) -> length(atom_to_list(T));
 len(T) when is_tuple(T) -> erlang:tuple_size(T);
-len(T) when is_list(T) -> length(T)
-.
+len(T) when is_list(T) -> length(T).
 
