@@ -25,7 +25,7 @@
 
 %% generators
 -export([list/1, tuple/1, int/0, real/0, sized/1, elements/1, any/0, atom/0, choose/2,
-	 oneof/1, boolean/0, char/0, return/1, vector/2]).
+	 oneof/1, boolean/0, char/0, return/1, vector/2, binary/1]).
 
 %% using a generator
 -export([generate/2, component_domain/2, dom_let/2, bind/2, suchthat/2]).
@@ -309,4 +309,20 @@ vector(Len, G) when Len > 0, is_integer(Len) ->
 		   end	
 	 }.
 
+%% @doc Return a binary of the specified size.
+%% @spec binary(Size) -> domain()
+binary(Size) when Size >=0 ->
+    #?DOM{kind={binary, Size},
+	  generate=fun(#?DOM{kind={binary,Sz}},_GS) ->			  
+			   list_to_binary([random:uniform(256)-1 || _<-lists:seq(1,Sz)])
+		   end,
+	  simplify=fun(_,V) -> 
+			   <<Val:Size/unsigned-integer-unit:8>> = V,
+			   New = case Val of
+				     0 -> 0;
+				     N -> N - 1
+				 end,
+			   <<New:Size/unsigned-integer-unit:8>>
+		   end}.
 
+    
