@@ -329,8 +329,7 @@ check(Property) ->
 	    io:format("~nRan ~p tests~n", [Count]),
 	    true
 
-    end
-.
+    end.
 
 print_counter_example(CounterExample) ->
     lists:foreach(fun({Syntax,_Fun,Val,_Dom}) ->
@@ -398,8 +397,7 @@ simplify(Fun,Input,InputDom,GS,Context,Tested) ->
 		{success, _} -> 
 		    simplify(Fun,Input,InputDom,GS-1,Context,NewTested)
 	    end
-    end
-.
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
