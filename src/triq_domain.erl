@@ -245,7 +245,7 @@ suchthat(Dom,Fun) ->
 
 %% @doc Domain specified by a list of members.
 %% Generating values from this domain yields a random
-%% element from the given list.
+%% element from the given list. Shrinking returns an earlier element.
 %% @spec elements(Members::list(Member)) -> domain()
 %% where 
 %%    Member = any()
@@ -256,7 +256,12 @@ elements(L) when is_list(L) ->
 	 generate=fun(#?DOM{kind={elements,L2,Len}},_GS) ->			  
 			  lists:nth(random:uniform(Len), L2)
 		  end,
-	 simplify=fun(_Dom,Val) -> Val end}.
+	 simplify=fun(_Dom,Val) -> 
+			  case lists:takewhile(fun (X) -> X/=Val end, L) of
+			      [] -> hd(L);
+			      Es -> lists:last(Es)
+			  end
+		  end}.
 
 
 %% @spec any()  -> domain()

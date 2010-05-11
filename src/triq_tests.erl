@@ -170,3 +170,13 @@ binary2_test() ->
 	<<2>> -> ok;
 	<<3>> -> ok
     end.
+
+%%
+%% Test shrinking of elements
+%%
+elements_test() ->
+    [X] = triq:counterexample
+	    (?FORALL(X, 
+		     elements([one,two,three]),
+		     false)),
+    one = X.
