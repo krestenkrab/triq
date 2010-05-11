@@ -157,5 +157,19 @@ binary_test() ->
 	    (?FORALL(X, binary(2), false)),
     <<0,0>> = X.
 
+not_reach_rsn() ->
+       ?LET(Rsn,choose(0,3),<<Rsn>>).
+
+binary2_test() ->
+    [X] = triq:counterexample
+            (?FORALL(X, not_reach_rsn(), false)),
+
+    case X of
+	<<0>> -> ok;
+	<<1>> -> ok;
+	<<2>> -> ok;
+	<<3>> -> ok
+    end.
+
 
     
