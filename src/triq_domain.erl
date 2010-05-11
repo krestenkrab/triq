@@ -199,7 +199,9 @@ generate_internal([H|T], GS) -> [generate(H,GS)|generate(T,GS)];
 generate_internal(V,_) when is_atom(V);
 		   is_number(V);
 		   is_list(V);
-		   is_function(V)
+		   is_function(V);
+		   is_binary(V);
+		   is_bitstring(V)
 		   ->
     V.
 
