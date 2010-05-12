@@ -274,7 +274,6 @@ sample(Gen) ->
     [generate(Gen, 100) || _ <- Scaffold].
 
 
-
 %%--------------------------------------------------------------------
 %% @doc
 %% Run QuickCheck.  If argument is an atom, it runs triq:module/1

@@ -76,7 +76,6 @@ prop_timeout() ->
      ?TIMEOUT(100,
        timer:sleep(N) == ok))).
 
-
 prop_sized() ->
     ?FORALL(T, ?SIZED(S, {true, choose(0,S)}),
 	    (erlang:tuple_size(T) == 2)
@@ -180,3 +179,4 @@ elements_test() ->
 		     elements([one,two,three]),
 		     false)),
     one = X.
+
