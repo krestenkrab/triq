@@ -29,9 +29,12 @@
 % use eunit
 -include_lib("eunit/include/eunit.hrl").
 
-%% eunit test!
-triq_test() ->
-    true = triq:check(?MODULE).
+%% eunit test; we need a longer timeout because some of it is rather slow...
+triq_test_() ->
+    {timeout, 60, 
+     fun() -> 
+	     true = triq:check(?MODULE)
+     end}.
 
 boolean_test() ->
     Unique = fun ordsets:from_list/1,
@@ -88,7 +91,8 @@ prop_sized() ->
 	   ).
 
 prop_simple1() ->
-    ?FORALL(V, [], V == []).
+    ?FORALL(V, [1,int(),3|4], 
+	    begin [1,X,3|4]=V, is_integer(X) end ).
 
 prop_simple2() ->
     ?FORALL(V, {}, V == {}).

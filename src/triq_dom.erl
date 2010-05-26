@@ -20,18 +20,42 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
+%% the name of te special record for domains
 -define(DOM,'@').
+
 -define(DEFAULT_PROP_PREFIX, "prop_").
+
+%% must correspond to the definitions in triq.hrl, but we don't want to
+%% include that file.
 -define(DELAY(X), fun()->X end).
 -define(SIZED(Size,Gen),
 	sized(fun(Size) -> Gen end)).
+
+%% How many times we try pick a value in order to satisfy a ?SUCHTHAT property.
 -define(SUCHTHAT_LOOPS,100).
 
--record('@',
-	{kind,
-	 pick   =fun error_pick/2,
-	 shrink =fun error_shrink/2,
-	 empty_ok = true
+-type pick_fun(T)   :: fun( (domain(T),integer()) -> {domain(T),T} | no_return() ).
+-type shrink_fun(T) :: fun( (domain(T),T)         -> {domain(T),T} | no_return() ).
+-type domrec(T) :: {?DOM, 
+		    atom() | tuple(),
+		    pick_fun(T),
+		    shrink_fun(T),
+		    boolean()}.
+
+-define(BOX,'@box').
+-record(?BOX, {dom :: domain(T), value :: T}).
+-type box(T) :: {?BOX, domain(T), T}.
+
+
+%% @type domain(T). 
+%% 
+-type domain(T) :: domrec(T) |  T.
+		     
+-record(?DOM,
+	{kind :: atom() | tuple(),
+	 pick   =fun error_pick/2    :: pick_fun(T),
+	 shrink =fun error_shrink/2  :: shrink_fun(T),
+	 empty_ok = true :: boolean()
 	}).
 
 
@@ -39,7 +63,7 @@
 -record(tuple, {elem}).
 -record(vector,{size, elem}).
 -record(binary,{size}).
--record(atom,{size}).
+-record(atom,  {size}).
 -record(oneof, {size, elems=[]}).
 -record(resize,{size, dom}).
 -record(bind,  {dom, body}).
@@ -49,35 +73,34 @@
 -record(bound_domain,{dom1,val1,dom2,fun2,size}).
 -record(choose,{min,max}).
 -record(elements,{elems,size,picked=none}).
-
-%% @type domain(). A domain of values.
--type domain(T) :: record(?DOM) | T.
+-record(seal,{dom,seed}).
+-record(custom,{name,pick,shrink,data}).
 
 %% generators
 -export([list/1, tuple/1, int/0, real/0, sized/1, elements/1, any/0, atom/0, atom/1, choose/2,
 	 oneof/1, boolean/0, char/0, return/1, vector/2, binary/1, binary/0, non_empty/1, resize/2]).
 
 %% using a generator
--export([bind/2, suchthat/2, pick/2, shrink/2]).
+-export([bind/2, suchthat/2, pick/2, shrink/2, sample/1, sampleshrink/1, 
+	 seal/1, open/1, peek/1,
+	 domain/4]).
 
-%% utility
--export([foldn/3]).
 
 %%
 %% Default values for pic/shrink in ?DOM records
 %%
-error_pick(#'@'{kind=Kind},_) -> erlang:error({pick,Kind}).
-error_shrink(#'@'{kind=Kind},_) -> erlang:error({shrink,Kind}).
+error_pick(#?DOM{kind=Kind},_) -> erlang:error({pick,Kind}).
+error_shrink(#?DOM{kind=Kind},_) -> erlang:error({shrink,Kind}).
 
--spec pick(domain(T), pos_integer()) -> {domain(T), T}.
+-spec pick(domain(T), pos_integer()) -> {domain(T), T}.    
 
 %%
 %% @doc The heart of the random structure generator; pick a value from the domain.
-%%   Returns a pair of `{domain(T), T}' where the first component described
+%%   Returns a pair of `{domain(T), T}' where the first component describes
 %%   the structure of the picked value.
 %% @spec pick(domain(T), pos_integer()) -> {domain(T), T}
 %%
-pick(Dom=#'@'{pick=PickFun}, SampleSize) ->
+pick(Dom=#?DOM{pick=PickFun}, SampleSize) ->
     PickFun(Dom,SampleSize);
 
 %%
@@ -163,12 +186,22 @@ pick_pair_test() ->
 
 
 
-%%%
-%%% Shrinking
-%%%
+%% @doc The shrinking step function used internally in Triq.
+%%
+%% Performs one single step of shrinking.  If unsuccessful,
+%% i.e. value cound not be shrunk, the output is equal to the input.
+%%
+%% Takes a `Domain' and a `Value' from said domain, and shrinks
+%% the value within the constraints of the domain.  The result is
+%% a tuple of a (possibly smaller) output domain, and the 
+%% shrunken value.
+%%
+%% @spec shrink(Domain::domain(T),Value::T) -> {domain(T), T}
 
-shrink(Dom=#?DOM{shrink=SFun}, Val) ->
-    SFun(Dom,Val);
+-spec shrink(domain(T),T) -> {domain(T), T}.
+     
+shrink(Domain=#?DOM{shrink=SFun}, Value) ->
+    SFun(Domain,Value);
 
 shrink(_, Simple) when Simple =:= [];
 		       Simple =:= {};
@@ -207,6 +240,9 @@ shrink(Any,Any) -> {Any,Any}.
 %% support functions for the generic shrinking
 %%
 
+-spec shrink_pair([domain(H)|domain(T)], [H|T], non_neg_integer()) -> 
+    {[domain(H)|domain(T)],[H|T]}.
+    
 shrink_pair(ListDom,List,0) ->
     {ListDom,List};
 shrink_pair([HDom|TDom]=ListDom, [H|T]=List, NAttempts) ->
@@ -256,7 +292,10 @@ shrink_tuple_samesize(TupDom, Tup, NAttempts) ->
 
 %%
 %% Shrink a list by simplifying one or more of the elements.
-%% 
+%%
+-spec shrink_list_samesize([domain(T)],[T],non_neg_integer(),non_neg_integer()) -> 
+    {[domain(T)],[T]}.
+
 shrink_list_samesize([],[],_,_) ->
     {[],[]};
 
@@ -282,6 +321,9 @@ shrink_list_samesize(ListDom,List,Length,NAttempts) when is_list(List) ->
 %% Given a list, shrink HowMany of it's elements, 
 %% but don't reduce the list length
 %%
+-spec shrink_list_members([domain(T)],[T],non_neg_integer(),non_neg_integer()) ->
+    {[domain(T)],[T]}.
+
 shrink_list_members(ListDom, List, _, 0) -> {ListDom,List};
 shrink_list_members(ListDom, List, Len, HowMany) when is_list(List), is_list(ListDom) ->
 
@@ -317,13 +359,14 @@ shrink_list_members(ListDom, List, Len, HowMany) when is_list(List), is_list(Lis
 %% Returns the domain of lists of the argument.  
 %% For example, `list(int())' yields the domain of lists of integers.
 %%
-%% @spec list( domain() ) -> domain()
+%% @spec list( domain(T) ) -> domain([T])
 %% @end
 %%--------------------------------------------------------------------
+-spec list(domain(T)) -> domrec([T]).
 list(ElemDom) ->
-    #'@'{kind=#list{elem=ElemDom}, pick=fun list_pick/2 }.
+    #?DOM{kind=#list{elem=ElemDom}, pick=fun list_pick/2 }.
 
-list_pick(#'@'{kind=#list{elem=ElemDom},empty_ok=EmptyOK}, 
+list_pick(#?DOM{kind=#list{elem=ElemDom},empty_ok=EmptyOK}, 
 	  SampleSize) ->
 
     OutLen = if EmptyOK =:= false ->
@@ -356,10 +399,10 @@ shrinkable_list(ListDom, List, Len, EmptyOK) ->
     ?assert(length(List) == length(ListDom)),
     ?assert(length(List) == Len),
 
-    SDom = #'@'{kind={shrinkable_list, ListDom, Len}, shrink=fun list_shrink/2, empty_ok=EmptyOK},
+    SDom = #?DOM{kind={shrinkable_list, ListDom, Len}, shrink=fun list_shrink/2, empty_ok=EmptyOK},
     {SDom,List}.
 
-list_shrink(#'@'{kind={shrinkable_list, ListDom, Len}, empty_ok=EmptyOK}, List) ->
+list_shrink(#?DOM{kind={shrinkable_list, ListDom, Len}, empty_ok=EmptyOK}, List) ->
     case shrink(ListDom,List) of
 	{_, List} when EmptyOK, (Len>0) ->
 
@@ -367,7 +410,6 @@ list_shrink(#'@'{kind={shrinkable_list, ListDom, Len}, empty_ok=EmptyOK}, List) 
 	    shrinkable_list( without(RemIdx, ListDom), without(RemIdx, List), Len-1, EmptyOK);
 
 	{ShrunkenListDom,ShrunkenList} -> 
-	    io:format("shrunk ~p -> ~p [empty_ok=~p]~n", [List,ShrunkenList,EmptyOK]),
 	    shrinkable_list(ShrunkenListDom, ShrunkenList, Len, EmptyOK)
     end.
 
@@ -375,10 +417,12 @@ list_shrink(#'@'{kind={shrinkable_list, ListDom, Len}, empty_ok=EmptyOK}, List) 
 %%
 %% Generator for tuples
 %%
+%% @spec tuple(domain(ElemType::any())) -> domain(tuple(ElemType))
+-spec tuple(domain(any())) -> domrec(tuple()).
 tuple(ElemDom) ->
-    #'@'{kind=#tuple{elem=ElemDom}, pick=fun tuple_pick/2 }.
+    #?DOM{kind=#tuple{elem=ElemDom}, pick=fun tuple_pick/2 }.
 
-tuple_pick(#'@'{kind=#tuple{elem=ElemDom},empty_ok=EmptyOK}, 
+tuple_pick(#?DOM{kind=#tuple{elem=ElemDom},empty_ok=EmptyOK}, 
 	  SampleSize) ->
 
     OutLen = if EmptyOK =:= false ->
@@ -403,17 +447,17 @@ tuple_pick(#'@'{kind=#tuple{elem=ElemDom},empty_ok=EmptyOK},
     shrinkable_tuple(list_to_tuple(ListDom), list_to_tuple(List), EmptyOK).
 
 
-%% oops, if length==1 and EmptyOK=false; just return the fixed tuple
+%% If length==1 and EmptyOK=false; just return the fixed tuple
 shrinkable_tuple(TupleDom, Tuple, false) when tuple_size(Tuple) =:= 1 ->
     {TupleDom, Tuple};
 
 shrinkable_tuple(TupleDom, Tuple, EmptyOK) ->
     ?assert(tuple_size(Tuple) == tuple_size(TupleDom)),
 
-    SDom = #'@'{kind={shrinkable_tuple, TupleDom}, shrink=fun tuple_shrink/2, empty_ok=EmptyOK},
+    SDom = #?DOM{kind={shrinkable_tuple, TupleDom}, shrink=fun tuple_shrink/2, empty_ok=EmptyOK},
     {SDom,Tuple}.
 
-tuple_shrink(#'@'{kind={shrinkable_tuple, TupleDom}, empty_ok=EmptyOK}, Tuple) ->
+tuple_shrink(#?DOM{kind={shrinkable_tuple, TupleDom}, empty_ok=EmptyOK}, Tuple) ->
     AllowSmaller = allow_smaller(tuple_size(Tuple), any, EmptyOK),
     case shrink(TupleDom,Tuple) of
 	{_, Tuple} when AllowSmaller ->
@@ -427,9 +471,10 @@ tuple_shrink(#'@'{kind={shrinkable_tuple, TupleDom}, empty_ok=EmptyOK}, Tuple) -
 
 
 %% @doc The domain of integers.
-%% @spec(int() -> domain()).
+%% @spec int() -> domain(integer())
+-spec int() -> domrec(integer()). 
 int() ->
-    #'@'{kind=int,
+    #?DOM{kind=int,
 	 shrink=fun(Dom,Val) when Val>0 -> {Dom,Val-1};
 		   (Dom,Val) when Val<0 -> {Dom,Val+1};
 		   (Dom,0) -> {Dom,0} 
@@ -440,9 +485,10 @@ int() ->
 	}.
 
 %% @doc The domain of floats.
-%% @spec(real() -> domain()).
+%% @spec real() -> domain(float())
+-spec real() -> domrec(float()).
 real() ->
-    #'@'{
+    #?DOM{
       kind=real,
       pick=fun(Dom,SampleSize) -> {Dom, (random:uniform()*SampleSize) - (SampleSize / 2)} end,
       shrink=fun(Dom,Val) -> {Dom, Val/2.0} end
@@ -450,17 +496,18 @@ real() ->
 
 
 %% @doc The domain of booleans.
-%% @spec(boolean() -> domain()).
+%% @spec boolean() -> domain( true | false )
 boolean() ->
-    #'@'{
+    #?DOM{
       kind=boolean,
       pick=fun(Dom,_) -> {Dom, random:uniform(2)==1} end,
       shrink=fun(Dom,Val) -> {Dom, Val} end
      }.
 
 
+-spec char() -> domrec(32..126).
 char() ->
-    #'@'{
+    #?DOM{
       kind=char,
       pick=fun(Dom,_) -> 
  		     {Dom, $a + random:uniform($z - $a + 1)-1} 
@@ -473,20 +520,20 @@ char() ->
 }.		     
 
 
--spec binary() -> domain(binary()).
+-spec binary() -> domrec(binary()).
 binary() ->
-    #'@'{kind=#binary{size=any},
+    #?DOM{kind=#binary{size=any},
 	 pick=fun binary_pick/2,
 	 shrink=fun binary_shrink/2}.
 
--spec binary(non_neg_integer()) -> domain(binary()).    
+-spec binary(Size::non_neg_integer()) -> domrec(binary()).    
 binary(Size) ->
-    #'@'{kind=#binary{size=Size},
+    #?DOM{kind=#binary{size=Size},
 	 pick=fun binary_pick/2,
 	 shrink=fun binary_shrink/2}.
 
 
-binary_pick(#'@'{kind=#binary{size=Size}, empty_ok=EmptyOK}=BinDom, SampleSize) ->
+binary_pick(#?DOM{kind=#binary{size=Size}, empty_ok=EmptyOK}=BinDom, SampleSize) ->
     Sz = case Size of
 	     any ->
 		 case EmptyOK of
@@ -512,7 +559,7 @@ allow_smaller(_,_,_) ->
     false.
 
 
-binary_shrink(#'@'{kind=#binary{size=Size}, empty_ok=EmptyOK}=BinDom, BinValue) ->
+binary_shrink(#?DOM{kind=#binary{size=Size}, empty_ok=EmptyOK}=BinDom, BinValue) ->
     List = binary_to_list(BinValue),
     Length = byte_size(BinValue),
     AllowSmaller = allow_smaller(Length,Size,EmptyOK) ,
@@ -523,20 +570,20 @@ binary_shrink(#'@'{kind=#binary{size=Size}, empty_ok=EmptyOK}=BinDom, BinValue) 
 
 
 
--spec atom() -> domain(atom()).
+-spec atom() -> domrec(atom()).
 atom() ->
-    #'@'{kind=#atom{size=any},
+    #?DOM{kind=#atom{size=any},
 	 pick=fun atom_pick/2,
 	 shrink=fun atom_shrink/2}.
 
--spec atom(non_neg_integer()) -> domain(atom()).    
+-spec atom(non_neg_integer()) -> domrec(atom()).    
 atom(Size) ->
-    #'@'{kind=#atom{size=Size},
+    #?DOM{kind=#atom{size=Size},
 	 pick=fun atom_pick/2,
 	 shrink=fun atom_shrink/2}.
 
 
-atom_pick(#'@'{kind=#atom{size=Size}, empty_ok=EmptyOK}=AtomDom, SampleSize) ->
+atom_pick(#?DOM{kind=#atom{size=Size}, empty_ok=EmptyOK}=AtomDom, SampleSize) ->
     Sz = case Size of
 	     any ->
 		 case EmptyOK of
@@ -559,7 +606,7 @@ min(A,B) when B<A -> B;
 min(A,B) when A==B -> A.
 
 
-atom_shrink(#'@'{kind=#atom{size=Size}, empty_ok=EmptyOK}=AtomDom, AtomValue) ->
+atom_shrink(#?DOM{kind=#atom{size=Size}, empty_ok=EmptyOK}=AtomDom, AtomValue) ->
     List = atom_to_list(AtomValue),
     Length = length(List),
     AllowSmaller = allow_smaller(Length,Size,EmptyOK) ,
@@ -571,10 +618,10 @@ atom_shrink(#'@'{kind=#atom{size=Size}, empty_ok=EmptyOK}=AtomDom, AtomValue) ->
 
 
 vector(Size,ElemDom) ->
-    #'@'{kind=#vector{size=Size,elem=ElemDom},
+    #?DOM{kind=#vector{size=Size,elem=ElemDom},
 	 pick=fun vector_pick/2}.
 
-vector_pick(#'@'{kind=#vector{size=Size,elem=ElemDom}}, SampleSize) ->
+vector_pick(#?DOM{kind=#vector{size=Size,elem=ElemDom}}, SampleSize) ->
     foldn(fun({TDom,T}) ->
 		  {HDom,H} = pick(ElemDom, SampleSize),
 		  {[HDom|TDom], [H|T]}
@@ -604,7 +651,7 @@ shrink_list_with_elemdom(ElemDom,List,Length,AllowSmaller) ->
 %%
 -spec shrink_list_members_generic(domain(T), [T], non_neg_integer(), integer()) -> [T].
 shrink_list_members_generic(_, List, _, 0) -> List;
-shrink_list_members_generic(#'@'{}=ElemDom, List, Len, HowMany) ->
+shrink_list_members_generic(#?DOM{}=ElemDom, List, Len, HowMany) ->
     ?assert(Len == length(List)),
 
     %%
@@ -626,32 +673,32 @@ shrink_list_members_generic(#'@'{}=ElemDom, List, Len, HowMany) ->
     
 
 
-non_empty(#'@'{}=Dom) ->
-    Dom#'@'{empty_ok=false}.
+non_empty(#?DOM{}=Dom) ->
+    Dom#?DOM{empty_ok=false}.
 
 
 %% @doc Support function for the `LET(Vars,Dom1,Dom2)' macro.
 -spec bind(domain(T::any()), 
 	   fun( (T::any()) -> domain(D) )) -> domain(D).
 bind(Gen1,FG2) -> 
-    #'@'{kind=#bind{dom=Gen1,body=FG2},
+    #?DOM{kind=#bind{dom=Gen1,body=FG2},
 	 pick = fun bind_pick/2
 	}.
 
 -spec bind_pick(domain(T),pos_integer()) -> T.
     
-bind_pick(#'@'{kind=#bind{dom=Dom,body=Fun}}, SampleSize) ->
+bind_pick(#?DOM{kind=#bind{dom=Dom,body=Fun}}, SampleSize) ->
     {Dom1,Val1} = pick(Dom, SampleSize),
     {Dom2,Val2} = pick( Fun(Val1), SampleSize),
     
     { bound_domain(Dom1,Val1,Dom2,Fun, SampleSize), Val2 }.
 
 bound_domain(Dom1,Val1,Dom2,Fun,SampleSize) ->
-    #'@'{kind=#bound_domain{dom1=Dom1,val1=Val1,dom2=Dom2,fun2=Fun,size=SampleSize},
+    #?DOM{kind=#bound_domain{dom1=Dom1,val1=Val1,dom2=Dom2,fun2=Fun,size=SampleSize},
 	 shrink= fun bound_shrink/2 
 	}.
 
-bound_shrink(#'@'{kind=#bound_domain{dom1=Dom1,val1=Val1,dom2=Dom2,fun2=Fun,size=SampleSize}}, Val2) ->
+bound_shrink(#?DOM{kind=#bound_domain{dom1=Dom1,val1=Val1,dom2=Dom2,fun2=Fun,size=SampleSize}}, Val2) ->
     case shrink(Dom1,Val1) of
 
 	% it did not shrink val1
@@ -672,8 +719,8 @@ bound_shrink(#'@'{kind=#bound_domain{dom1=Dom1,val1=Val1,dom2=Dom2,fun2=Fun,size
 -spec suchthat(domain(T),fun((T) -> boolean())) -> domain(T).
 	     
 suchthat(Dom,Fun) ->
-    #'@'{kind=#suchthat{dom=Dom,pred=Fun},
-	 pick=fun(#'@'{kind=#suchthat{dom=Dom1,pred=Fun1}},SampleSize) -> 
+    #?DOM{kind=#suchthat{dom=Dom,pred=Fun},
+	 pick=fun(#?DOM{kind=#suchthat{dom=Dom1,pred=Fun1}},SampleSize) -> 
 		      suchthat_loop(?SUCHTHAT_LOOPS,Dom1,Fun1,SampleSize) 
 	      end
 	}.			   
@@ -706,80 +753,228 @@ any()  ->
 
 	  ]).
 
--spec oneof(list(domain(any()))) -> domain(any()).
-    
+-spec oneof([domain(T)]) -> domain(T).
 oneof(DomList) when is_list(DomList) ->
-    #'@'{kind=#oneof{elems=DomList, size=length(DomList)},
+    #?DOM{kind=#oneof{elems=DomList, size=length(DomList)},
 	 pick=fun oneof_pick/2
 	 }.
 
-oneof_pick(#'@'{kind=#oneof{elems=DomList, size=Length}}, SampleSize) ->
+oneof_pick(#?DOM{kind=#oneof{elems=DomList, size=Length}}, SampleSize) ->
     Dom = lists:nth(random:uniform(Length), DomList),
     pick(Dom, SampleSize).
 
 %% @doc Returns the doamin of Val.
 -spec return(Val::Type) -> domain(Type).
 return(Val) -> 
-    #'@'{kind=#return{value=Val},
-	 pick  = fun(#'@'{kind=#return{value=V}}=Dom,_) -> {Dom,V} end,
+    #?DOM{kind=#return{value=Val},
+	 pick  = fun(#?DOM{kind=#return{value=V}}=Dom,_) -> {Dom,V} end,
 	 shrink  = fun(Dom,V) -> {Dom,V} end
 	}.
 
 -spec(sized( fun((integer()) -> domain(T)) ) -> domain(T)).	     
 sized(Fun) ->
-    #'@'{kind=#sized{body=Fun},
-	 pick=fun(#'@'{kind=#sized{body=F}},GS) -> pick(F(GS),GS) end
+    #?DOM{kind=#sized{body=Fun},
+	 pick=fun(#?DOM{kind=#sized{body=F}},GS) -> pick(F(GS),GS) end
 	}. 
 
 resize(Sz,Dom) ->
-    #'@'{kind=#resize{dom=Dom,size=Sz},
-	 pick=fun(#'@'{kind=#resize{dom=D,size=SampleSize}},_) -> 
+    #?DOM{kind=#resize{dom=Dom,size=Sz},
+	 pick=fun(#?DOM{kind=#resize{dom=D,size=SampleSize}},_) -> 
 		      pick(D,SampleSize) 
 	      end
 	}. 
     
--spec choose(M::integer(), N::integer()) -> domain(integer()).
+-spec choose(M::integer(), N::integer()) -> domrec(integer()).
 choose(M,N) when is_integer(M), is_integer(N), M<N ->
-    #'@'{kind={choose,M,N},
+    #?DOM{kind={choose,M,N},
 	 pick = fun choose_pick/2,
 	 shrink = fun choose_shrink/2
 	}.
 
-choose_pick(#'@'{kind=#choose{min=M,max=N}}=Dom, _) ->
+choose_pick(#?DOM{kind=#choose{min=M,max=N}}=Dom, _) ->
     Value = random:uniform(N-M+1) - 1 + M,
     {Dom,Value}.
 
-choose_shrink(#'@'{kind=#choose{min=M}}=Dom, Value) when Value > M ->
+choose_shrink(#?DOM{kind=#choose{min=M}}=Dom, Value) when Value > M ->
     {Dom,Value-1};
-choose_shrink(#'@'{kind=#choose{min=M}}=Dom, M) ->
+choose_shrink(#?DOM{kind=#choose{min=M}}=Dom, M) ->
     {Dom,M}.
 
 %% @doc Generates a member of the list `L'.  Shrinks towards the first element of the list.
 -spec elements([T,...]) -> domain(T).	      
 elements(L) when is_list(L), length(L)>0 ->
-    #'@'{kind=#elements{elems=L,size=length(L)}, 
+    #?DOM{kind=#elements{elems=L,size=length(L)}, 
 	 pick = fun elements_pick/2,
 	 shrink = fun elements_shrink/2
 	 }.
 
 -spec elements_pick(domain(T), pos_integer()) -> {domain(T), T}.    
-elements_pick(#'@'{kind=#elements{elems=Elems,size=Length}=Kind}=Dom, _) ->
+elements_pick(#?DOM{kind=#elements{elems=Elems,size=Length}=Kind}=Dom, _) ->
     Picked = random:uniform(Length),
     Value = lists:nth(Picked,Elems),
-    { Dom#'@'{kind=Kind#elements{picked=Picked}},
+    { Dom#?DOM{kind=Kind#elements{picked=Picked}},
       Value }.
 
-elements_shrink(#'@'{kind=#elements{elems=Elems,picked=Picked}=Kind}=Dom, _) when Picked > 1 ->
+elements_shrink(#?DOM{kind=#elements{elems=Elems,picked=Picked}=Kind}=Dom, _) when Picked > 1 ->
     Value = lists:nth(Picked-1,Elems),
-    { Dom#'@'{kind=Kind#elements{picked=Picked-1}},
+    { Dom#?DOM{kind=Kind#elements{picked=Picked-1}},
       Value };
 elements_shrink(Dom,Value) ->
     { Dom, Value }.
 
 
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Generate a sample of output values from a generator.
+%%
+%% @spec sample( domain(T) ) -> [T]
+%% @end
+%%--------------------------------------------------------------------
+sample(Dom) ->
+    foldn(fun(T) -> 
+		  {_,Val} = pick(Dom, 20 + random:uniform(10) ),
+		  [Val|T]
+	  end,
+	  [],
+	  11).
+
+%%-------------------------------------------------------------------
+%% @doc Get the domain of boxes of T
+%% @spec seal(domain(T)) -> domain(box(T))
+%% @end
+%%-------------------------------------------------------------------
+
+-spec seal(Dom::domain(T)) -> domain(box(T)).
+    
+seal(Dom) ->
+    Seed = random:seed(),
+    random:seed(Seed),
+    #?DOM{kind=#seal{dom=Dom,seed=Seed}, pick=fun seal_pick/2}.
+
+seal_pick(#?DOM{kind=#seal{dom=Dom,seed=Seed}}, SampleSize) ->
+    OldSeed = random:seed(Seed),
+    {BoxDom,BoxValue} = pick(Dom,SampleSize),
+    random:seed(OldSeed),
+    #?BOX{dom=BoxDom,value=BoxValue}.
+
+%%-------------------------------------------------------------------
+%% @doc Open a box, yielding a domain which always generates the same value.
+%% @spec open(box(T)) -> domain(T)
+%% @end
+%%-------------------------------------------------------------------
+-spec open(Box::box(T)) -> domain(T).
+    
+open(#?BOX{}=Box) ->
+    #?DOM{kind=Box, pick=fun box_pick/2}.
+
+box_pick(#?DOM{kind=#?BOX{dom=Dom,value=Value}}, _) ->
+    {Dom,Value}.
+
+-spec peek(box(T)) -> T.
+     
+peek(#?BOX{value=Value}) ->
+    Value.
+
+%%------------------------------------------------------------------
+%% @doc Print a value generated by `Domain', followed by a sample of shrinkings.
+%% For each line of successive output, it prints up to five samples of 
+%% shrinking.  The first value on each like is used as the target for the next
+%% round of shrinking.
+%%
+%% <pre> 1> sampleshrink(list(int())).
+%%[-2,-8,2]
+%%[[-1,-8,2],[0,-8,2],[-1,-7,2],[-2,-8,1],[-1,-8,1]]
+%%[[0,-8,2],[0,-6,1],[-1,-7,2],[0,-7,2]]
+%%[[0,-8,0],[0,-7,0],[0,-7,2],[0,-8,1],[0,-5,2],[0,-7,1]]
+%%[[0,-7,0],[0,-5,0]]
+%%[[0,-5,0],[0,-6,0]]
+%%[[0,-4,0],[0,-3,0]]
+%%[[0,-2,0],[0,-3,0],[0,-1,0]]
+%%[[0,-1,0]]
+%%[[0,0,0]]
+%%[[0,0]]
+%%[[0]]
+%%[[]]
+%%ok</pre>
+%% @spec sampleshrink(domain(any())) -> ok
+%% @end
+%%------------------------------------------------------------------
 
 
+-spec sampleshrink(domain(any())) -> ok.
+sampleshrink(Domain) ->     
+    {Dom2,Value} = pick(Domain, 20),
+    io:format("~p~n", [Value]),
+    sampleshrink_loop(Dom2,Value).
+
+sampleshrink_loop(Dom,Val) ->
+    case shrink(Dom,Val) of
+	{_,Val} ->
+	    ok;
+	{Dom2,Val2} ->
+	    Samples = foldn(fun(T) -> {_,V} = shrink(Dom,Val),
+				      case lists:member(V,T) of
+					  true -> T;
+					  false -> [V|T]
+				      end
+			    end,
+			    [Val2],
+			    5),
+				    
+	    io:format("~p~n", [lists:reverse(Samples)]),
+	    sampleshrink_loop(Dom2,Val2)
+    end.
+
+%%------------------------------------------------------------------------
+%% @doc Create custom domain.
+%% This function allows you to create a custom domain with it's own
+%% shrinking logic.  For instance, the natural numbers can be specified thus:
+%%
+%% <pre>nat() -> 
+%%    domain("Natural Numbers",
+%%      fun(Self,foo,Size) -> {NatDom,random:uniform(Size)} end,
+%%      fun(Self,foo,Value) when Value>0 ->
+%%            {Self, Value-1};
+%%         (Self,_,0) ->
+%%            {0, 0}
+%%      end,
+%%      foo).</pre>
+%%
+%% The domain itself (`Self' in the above code) is passed as the first argument
+%% to each invocation of both the picking and the shrinking functions.
+%%
+%% The `Data' argument (in this case `foo') is passed as the second argument 
+%% to each invocation of both the picking and shrinking functions.
+%%
+%% Both the picking and the shrinking function must return a 2-tuple of 
+%% the domain of the resulting value, and the value itself.
+%%
+%% @spec domain(Name::any(),
+%%	     PickFun :: user_pick_fun(D,T),
+%%	     ShrinkFun :: user_shrink_fun(D,T),
+%%	     Data::D) -> domain(T)
+%% @end
+%%------------------------------------------------------------------------
+
+-type user_pick_fun(D,T) :: fun ( (Self::domain(T),Data::D,Size::pos_integer()) -> {domain(T), T}).
+-type user_shrink_fun(D,T) :: fun ( (Self::domain(T),Data::D,Value::T) -> {domain(T), T}).
+
+-spec domain(Name::any(),
+	     PickFun::user_pick_fun(D, T),
+	     ShrinkFun::user_shrink_fun(D, T),
+	     Data::D) -> domain(T).
+
+domain(Name,PickFun,ShrinkFun,Data) ->
+    #?DOM{kind=#custom{name=Name,pick=PickFun,shrink=ShrinkFun,data=Data},
+	  pick=fun domain_pick/2,
+	  shrink=fun domain_shrink/2}.
+
+domain_pick(#?DOM{kind=#custom{pick=PickFun,data=Data}}=Self, SampleSize) ->
+    {_,_} = PickFun(Self, Data, SampleSize).
+
+domain_shrink(#?DOM{kind=#custom{shrink=ShrinkFun,data=Data}}=Self, Value) ->
+    {_,_} = ShrinkFun(Self, Data, Value).
 
 
 %%
