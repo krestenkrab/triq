@@ -32,7 +32,7 @@
 
 -module(triq_autoexport).
 
--include("triq_internal.hrl").
+-define(DEFAULT_PROP_PREFIX, "prop_").
 
 -export([parse_transform/2]).
 

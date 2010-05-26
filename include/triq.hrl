@@ -18,6 +18,7 @@
 
 -define(DELAY(X), fun()->X end).
 -define(FORCE(X), (X)() ).
+-define(DOMAIN_MODULE, triq_dom).
 
 %% properties
 -define(FORALL(X,Gen,Property),
@@ -42,20 +43,21 @@
 %%% LET is also defined by eunit; what to do?
 -ifndef(LET).
 -define(LET(X,Gen1,Gen2), 
-	triq_domain:dom_let(Gen1, fun(X)->Gen2 end)).
+	?DOMAIN_MODULE:bind(Gen1, fun(X)->Gen2 end)).
 -endif.
 
 -define(SIZED(Size,Gen),
-	triq_domain:sized(fun(Size) -> Gen end)).
+	?DOMAIN_MODULE:sized(fun(Size) -> Gen end)).
 
 -define(SUCHTHAT(X,G,P),
-	triq_domain:suchthat(G, fun(X) -> P end)).
+	?DOMAIN_MODULE:suchthat(G, fun(X) -> P end)).
 				      
 
 %%
 %% import domain functions (a.k.a. generators)
 %%
--import(triq_domain, [list/1, tuple/1, int/0, real/0, elements/1, any/0, atom/0, choose/2, boolean/0, char/0, oneof/1, return/1, vector/2, binary/1]).
+-import(?DOMAIN_MODULE, [list/1, tuple/1, int/0, real/0, elements/1, any/0, atom/0, 
+		   choose/2, boolean/0, char/0, oneof/1, return/1, vector/2, binary/1]).
 
 
 %%
@@ -65,7 +67,7 @@
 %%
 %% - Define this exported function:
 %%
-%%     check() -> triq:module(?MODULE).
+%%     ?MODULE:check() -> triq:module(?MODULE).
 %%
 -ifndef(TRIQ_NOAUTO).
 -compile({parse_transform, triq_autoexport}).

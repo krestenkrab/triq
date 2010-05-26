@@ -35,21 +35,23 @@ triq_test() ->
 
 boolean_test() ->
     Unique = fun ordsets:from_list/1,
-    ?assertEqual([false, true], Unique(triq:sample(boolean()))).
+    ?assertEqual([false, true], Unique(triq_dom:sample(boolean()))).
 
 prop_append() ->
     ?FORALL({Xs,Ys},{list(int()),list(int())},
        ?TRAPEXIT(lists:reverse(Xs++Ys)
 		 ==
 		 lists:reverse(Ys) ++ lists:reverse(Xs))).
-					 
-delete_test() ->
-    false = triq:check(
-    ?FORALL(L,list(int()), 
+
+xprop_delete() ->
+     ?FORALL(L,list(int()), 
 	?IMPLIES(L /= [],
 	    ?FORALL(I,elements(L), 
 		?WHENFAIL(io:format("L=~p, I=~p~n", [L,I]),
-		    not lists:member(I,lists:delete(I,L))))))).
+		    not lists:member(I,lists:delete(I,L)))))).
+					 
+delete_test() ->
+    false = triq:check(xprop_delete()).
 
 
 inverse('<') -> '>=';
@@ -74,7 +76,9 @@ prop_timeout() ->
  fails(
    ?FORALL(N,choose(50,150),
      ?TIMEOUT(100,
-       timer:sleep(N) == ok))).
+       timer:sleep(N) == ok))
+)
+.
 
 prop_sized() ->
     ?FORALL(T, ?SIZED(S, {true, choose(0,S)}),
@@ -108,6 +112,8 @@ prop_suchthat() ->
 		      XX < YY), 
 	    X < Y).
 
+suchthat_test() ->
+    true = triq:counterexample(prop_suchthat()).
 
 tuple_failure_test() ->
     false = check(?FORALL(T, {int()},
@@ -116,6 +122,13 @@ tuple_failure_test() ->
 			      V > 0
 			  end)).
 
+list_shrink_test() ->
+    %% test that a list shrinks to the empty list
+    [[]] = triq:counterexample(
+	     ?FORALL(_, list(int()), false)
+	    ).
+
+
 oneof_test() ->
     [{X,Y}] = triq:counterexample(
 	      ?FORALL({X,Y}, 
@@ -123,8 +136,11 @@ oneof_test() ->
 				{oneof([int(),real()]),
 				 oneof([int(),real()])},
 				A < B),
-		      is_integer(X) == is_integer(Y))),
-
+		      begin
+%			  io:format("{X,Y} = ~p~n", [{X,Y}]),
+			  is_integer(X) == is_integer(Y)
+		      end
+			 )),
     %% Note: 0 == 0.0
     ?assert((X == 0) and (Y == 0)).
 
@@ -133,7 +149,7 @@ oneof_test() ->
 %%
 oneof2_test() ->
     [X] = triq:counterexample
-	    (?FORALL(X, 
+	    (?FORALL(_, 
 		     oneof([choose(3,7)]),
 		     false)),
     3 = X.
@@ -143,7 +159,7 @@ oneof2_test() ->
 %%
 vector_test() ->
     [L] = triq:counterexample
-            (?FORALL(L, vector(4, choose(3,7)),
+            (?FORALL(_, vector(4, choose(3,7)),
 		     false)),
     [3,3,3,3] = L.
 
@@ -153,29 +169,24 @@ vector_test() ->
 %%
 binary_test() ->
     [X] = triq:counterexample
-	    (?FORALL(X, binary(2), false)),
+	    (?FORALL(_, binary(2), false)),
     <<0,0>> = X.
 
 not_reach_rsn() ->
-       ?LET(Rsn,choose(0,3),<<Rsn>>).
+       ?LET(Rsn,choose(2,5),<<Rsn>>).
 
 binary2_test() ->
-    [X] = triq:counterexample
-            (?FORALL(X, not_reach_rsn(), false)),
+    [<<2>>] = triq:counterexample
+            (?FORALL(_, not_reach_rsn(), false)).
 
-    case X of
-	<<0>> -> ok;
-	<<1>> -> ok;
-	<<2>> -> ok;
-	<<3>> -> ok
-    end.
+
 
 %%
 %% Test shrinking of elements
 %%
 elements_test() ->
     [X] = triq:counterexample
-	    (?FORALL(X, 
+	    (?FORALL(_, 
 		     elements([one,two,three]),
 		     false)),
     one = X.

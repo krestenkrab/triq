@@ -18,22 +18,43 @@
 
 -module(triq).
 
--export([check/1,fails/1,module/1, sample/1, 
+%%
+%% For each ?FORALL, we try to shrink the value
+%% this many iterations.
+%%
+-define(SHRINK_COUNT, 1000).
+
+%%
+%% The default number of tests to run
+%%
+-define(TEST_COUNT, 100).
+
+-export([check/1, fails/1, module/1,  
 	 counterexample/0, counterexample/1]).
 
--import(triq_domain, [generate/2]).
+-import(triq_dom, [pick/2, shrink/2]).
 
 -record(triq, {count=0,
 	      context=[],
-	      size=100,
-	      report= fun(pass,_)->ok;
-			 (fail,_)->ok;
-			 (skip,_)->ok end,
+	      size=?TEST_COUNT,  %% todo: remove this
+	      report= fun report_none/2,
 	      shrinking= false,
 	      result=undefined,
 	      body}).
 
+%%
+%% Default reporting function, ... is silent
+%%
+report_none(pass, _) ->
+    ok;
+report_none(fail, _) ->
+    ok;
+report_none(skip, _) ->
+    ok.
 
+%%
+%% Reporting function used while testing, prints "..xxxx Failed!" 
+%%
 report(pass,_) ->
     io:format(".");
 report(skip,_) ->
@@ -43,7 +64,10 @@ report(fail,false) ->
 report(fail,Value) ->
     io:format("Failed with: ~p~n", [Value]).
 
-check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
+%%
+%% 
+%%
+check_input(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 
     try Fun(Input) of	
 	true -> 
@@ -61,7 +85,7 @@ check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 	    Yield;
 	
 	{'prop:fails', Property} ->
-	    case check(fun(none)->Property end,none,none,QCT#triq{}) of
+	    case check_input(fun(none)->Property end,none,none,QCT#triq{}) of
 		{success, _} ->
 		    {failure, Fun, Input, IDom, QCT#triq{result=unexpected_success,
 							 context=[{"?",Fun,Input,IDom}
@@ -74,10 +98,10 @@ check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 	    {success, Count};
 	
 	{'prop:implies', true, _Syntax, Fun2, Body2} ->
-	    check(fun(none)->Fun2()end,none,none,QCT#triq{body=Body2});
+	    check_input(fun(none)->Fun2()end,none,none,QCT#triq{body=Body2});
 	
 	{'prop:whenfail', Action, Fun2, Body2} ->
-	    case check(fun(none)->Fun2()end,none,none,QCT#triq{body=Body2}) of
+	    case check_input(fun(none)->Fun2()end,none,none,QCT#triq{body=Body2}) of
 		{success, _}=Success ->
 		    Success;
 		Any when not QCT#triq.shrinking ->
@@ -92,7 +116,7 @@ check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 	    Main = self(),
 	    PID = spawn_link
 		    (fun() ->
-			     Result = check(fun(none)->Fun2()end,none,none,
+			     Result = check_input(fun(none)->Fun2()end,none,none,
 					    QCT#triq{body=Body2}),
 			     Main ! {self(), Result}
 		     end),
@@ -116,7 +140,7 @@ check(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 	    end;
 	
 	{'prop:forall', Dom2, Syntax2, Fun2, Body2} ->
-	    check_forall(0, 100, Dom2, Fun2, Syntax2, QCT#triq{body=Body2}, gb_sets:new());
+	    check_forall(0, ?TEST_COUNT, Dom2, Fun2, Syntax2, QCT#triq{body=Body2}, gb_sets:new());
 
 	Any ->
 	    DoReport(fail,Any),
@@ -141,7 +165,7 @@ check_timeout(Fun,Input,IDom,Limit,Fun2,#triq{count=Count,report=DoReport}=QCT) 
 		   Slave = spawn_link
 			     (fun() ->
 				      Slave = self(),
-				      Result = check(fun(none)->Fun2()end,
+				      Result = check_input(fun(none)->Fun2()end,
 						     none,
 						     none,
 						     QCT),
@@ -190,15 +214,11 @@ check_timeout(Fun,Input,IDom,Limit,Fun2,#triq{count=Count,report=DoReport}=QCT) 
 check_forall(N,N,_,_,_,#triq{count=Count}, _) ->
     {success, Count};
 
-check_forall(N,NMax,XDom,Fun,Syntax,#triq{context=Context,report=DoReport,count=Count}=QCT, Tested) ->
+check_forall(N,NMax,Dom,Fun,Syntax,#triq{context=Context,report=DoReport,count=Count}=QCT, Tested) ->
 
-    GenSize = 2 + 2*N,
+    DomSize = 2 + 2*N,
 
-    %% if input domain is one of LET or SIZED, then it
-    %% needs to be resolved here before we continue.
-    Dom = triq_domain:bind(XDom,GenSize),
-
-    Input = generate(Dom, GenSize),
+    {InputDom,Input} = pick(Dom, DomSize),
 
     IsTested = gb_sets:is_member(Input,Tested),
     if 
@@ -207,22 +227,18 @@ check_forall(N,NMax,XDom,Fun,Syntax,#triq{context=Context,report=DoReport,count=
 	    check_forall(N+1,NMax,Dom,Fun,Syntax,QCT#triq{count=Count+1},Tested);
 
 	true ->
-	    case check(Fun,Input,Dom,QCT#triq{size=GenSize, 
-					      context=[{Syntax,Fun,Input,Dom}|Context]}) of
+	    case check_input(Fun,Input,InputDom,QCT#triq{size=DomSize, 
+					      context=[{Syntax,Fun,Input,InputDom}|Context]}) of
 
 		%% it did not fail, try again with N := N+1
 		{success,NewCount} -> 
 		    NewTested = gb_sets:add(Input,Tested),
-		    check_forall(N+1, NMax,Dom, Fun, Syntax, QCT#triq{count=NewCount}, NewTested);
+		    check_forall(N+1, NMax, Dom, Fun, Syntax, QCT#triq{count=NewCount}, NewTested);
 
 		%% it failed, report it!
 		{failure, _, _, _, Ctx} ->
-		    {failure, Fun, Input, Dom, Ctx};
+		    {failure, Fun, Input, InputDom, Ctx}
 		
-		true ->
-		    io:format("huh?"),
-		    {success, 1000}
-
 	    end
     end.
 
@@ -262,20 +278,6 @@ module(Module) when is_atom(Module) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Generate a sample of output values from a generator.
-%%
-%% @spec sample( domain() ) -> [any()]
-%% @end
-%%--------------------------------------------------------------------
-sample(Gen) ->
-    Scaffold = lists:seq(0, 10),
-    % Use a size of 100, since this is the default value
-    % of the size field in the #triq record.
-    [generate(Gen, 100) || _ <- Scaffold].
-
-
-%%--------------------------------------------------------------------
-%% @doc
 %% Run QuickCheck.  If argument is an atom, it runs triq:module/1
 %% checking all the properties in said module; otherwise if the 
 %% argument is a property, it runs QuickCheck on said property.
@@ -289,7 +291,7 @@ check(Module) when is_atom(Module) ->
 
 check(Property) ->
 
-    case check(fun(nil)->Property end, 
+    case check_input(fun(nil)->Property end, 
 	       nil,
 	       nil,
 	       #triq{report=fun report/2}) of
@@ -307,7 +309,7 @@ check(Property) ->
 	    
 	    %% Run the shrinking function
 	    %%
-	    Simp = simplify(Fun,Input,InputDom,1000,tl(Context),gb_sets:new()),
+	    Simp = shrink_loop(Fun,Input,InputDom,?SHRINK_COUNT,tl(Context),gb_sets:new()),
 
 	    %%
 	    %% Compute the counter example
@@ -351,17 +353,17 @@ counterexample() ->
 %% ?FORALL smaller; after trying the outer.
 %%
 
-simplify_deeper(Input,[{_,F1,I1,G1}|T]) -> 
-    [Input | simplify(F1,I1,G1,100,T,gb_sets:new())];
-simplify_deeper(Input,[]) -> [Input].
+shrink_deeper(Input,[{_,F1,I1,G1}|T]) -> 
+    [Input | shrink_loop(F1,I1,G1,?SHRINK_COUNT,T,gb_sets:new())];
+shrink_deeper(Input,[]) -> [Input].
 
 
 %% this is the main logic for the simplify function
 
-simplify(_,Input,_,0,Context,_) ->
-    simplify_deeper(Input,Context);
+shrink_loop(_,Input,_,0,Context,_) ->
+    shrink_deeper(Input,Context);
 
-simplify(Fun,Input,InputDom,GS,Context,Tested) ->
+shrink_loop(Fun,Input,InputDom,GS,Context,Tested) ->
 
     %%
     %% simplify_value will attempt to shrink the
@@ -369,7 +371,7 @@ simplify(Fun,Input,InputDom,GS,Context,Tested) ->
     %% There is randomness involved, so it may just
     %% return it's Input argument...
     %%
-    NewInput = triq_simplify:simplify_value(InputDom,Input),
+    {NewDom,NewInput} = shrink(InputDom,Input),
 
     %%io:format("simp ~p -> ~p (~p)~n", [Input, NewInput, InputDom]),
 
@@ -377,24 +379,27 @@ simplify(Fun,Input,InputDom,GS,Context,Tested) ->
 
     if 
 	IsTested ->
-	    simplify(Fun,Input,InputDom,GS-1,Context,Tested);
+	    %% aparently, there was some randomness in the
+	    %% shrinking that made us shrink again to a value
+	    %% we shrunk to before.
+	    shrink_loop(Fun,Input,InputDom,GS-1,Context,Tested);
 
 	Input =:= NewInput ->
-	    simplify_deeper(Input, Context);
+	    shrink_deeper(Input, Context);
 
 	true ->
 	    NewTested = gb_sets:add(NewInput,Tested),
 
-	    case check (Fun,NewInput,InputDom,#triq{size=GS,shrinking=true}) of
+	    case check_input(Fun,NewInput,NewDom,#triq{size=GS,shrinking=true}) of
 		
 		%% still failed, try to simplify some more
 		{failure, _, _, _, #triq{context=C2}} -> 
-		    simplify(Fun,NewInput,InputDom,GS,C2,NewTested);
+		    shrink_loop(Fun,NewInput,NewDom,GS,C2,NewTested);
 		
 		%% oops, we simplified too much; try again
 		%% with the same inputs
 		{success, _} -> 
-		    simplify(Fun,Input,InputDom,GS-1,Context,NewTested)
+		    shrink_loop(Fun,Input,InputDom,GS-1,Context,NewTested)
 	    end
     end.
 
