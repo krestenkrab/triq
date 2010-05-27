@@ -74,7 +74,6 @@
 -record(choose,{min,max}).
 -record(elements,{elems,size,picked=none}).
 -record(seal,{dom,seed}).
--record(custom,{name,pick,shrink,data}).
 
 %% generators
 -export([list/1, tuple/1, int/0, real/0, sized/1, elements/1, any/0, atom/0, atom/1, choose/2,
@@ -83,7 +82,7 @@
 %% using a generator
 -export([bind/2, suchthat/2, pick/2, shrink/2, sample/1, sampleshrink/1, 
 	 seal/1, open/1, peek/1,
-	 domain/4]).
+	 domain/3]).
 
 
 %%
@@ -203,14 +202,6 @@ pick_pair_test() ->
 shrink(Domain=#?DOM{shrink=SFun}, Value) ->
     SFun(Domain,Value);
 
-shrink(_, Simple) when Simple =:= [];
-		       Simple =:= {};
-		       Simple =:= '';
-		       Simple =:= << >>;
-                       Simple =:= 0;
-                       Simple =:= 0.0 ->
-
-    {Simple,Simple};
 
 shrink(TupDom,Tup) when is_tuple(TupDom), 
                         is_tuple(Tup), 
@@ -845,7 +836,7 @@ sample(Dom) ->
 %% @end
 %%-------------------------------------------------------------------
 
--spec seal(Dom::domain(T)) -> domain(box(T)).
+-spec seal(Dom::domain(T)) -> domrec(box(T)).
     
 seal(Dom) ->
     Seed = random:seed(),
@@ -929,52 +920,39 @@ sampleshrink_loop(Dom,Val) ->
 %%------------------------------------------------------------------------
 %% @doc Create custom domain.
 %% This function allows you to create a custom domain with it's own
-%% shrinking logic.  For instance, the natural numbers can be specified thus:
+%% shrinking logic.  For instance, the even numbers can be specified thus:
 %%
-%% <pre>nat() -> 
-%%    domain("Natural Numbers",
-%%      fun(Self,foo,Size) -> {NatDom,random:uniform(Size)} end,
-%%      fun(Self,foo,Value) when Value>0 ->
-%%            {Self, Value-1};
+%% <pre>even() -> 
+%%    domain(even,
+%%      fun(Self,Size) ->
+%%            Value = (random:uniform(Size) * 2) div 2,
+%%            {Self, Value} 
+%%      end,
+%%      fun(Self,Value) when Value>0 ->
+%%            {Self, Value-2};
 %%         (Self,_,0) ->
 %%            {0, 0}
-%%      end,
-%%      foo).</pre>
+%%      end).</pre>
 %%
 %% The domain itself (`Self' in the above code) is passed as the first argument
 %% to each invocation of both the picking and the shrinking functions.
-%%
-%% The `Data' argument (in this case `foo') is passed as the second argument 
-%% to each invocation of both the picking and shrinking functions.
 %%
 %% Both the picking and the shrinking function must return a 2-tuple of 
 %% the domain of the resulting value, and the value itself.
 %%
 %% @spec domain(Name::any(),
-%%	     PickFun :: user_pick_fun(D,T),
-%%	     ShrinkFun :: user_shrink_fun(D,T),
-%%	     Data::D) -> domain(T)
+%%	     PickFun :: pick_fun(T),
+%%	     ShrinkFun :: shrink_fun(T)) -> domain(T)
 %% @end
 %%------------------------------------------------------------------------
 
--type user_pick_fun(D,T) :: fun ( (Self::domain(T),Data::D,Size::pos_integer()) -> {domain(T), T}).
--type user_shrink_fun(D,T) :: fun ( (Self::domain(T),Data::D,Value::T) -> {domain(T), T}).
+-spec domain(Name::atom(),
+	     PickFun::pick_fun(T),
+	     ShrinkFun::shrink_fun(T)) -> domain(T).
 
--spec domain(Name::any(),
-	     PickFun::user_pick_fun(D, T),
-	     ShrinkFun::user_shrink_fun(D, T),
-	     Data::D) -> domain(T).
+domain(Name,PickFun,ShrinkFun) ->
+    #?DOM{kind=Name, pick=PickFun, shrink=ShrinkFun}.
 
-domain(Name,PickFun,ShrinkFun,Data) ->
-    #?DOM{kind=#custom{name=Name,pick=PickFun,shrink=ShrinkFun,data=Data},
-	  pick=fun domain_pick/2,
-	  shrink=fun domain_shrink/2}.
-
-domain_pick(#?DOM{kind=#custom{pick=PickFun,data=Data}}=Self, SampleSize) ->
-    {_,_} = PickFun(Self, Data, SampleSize).
-
-domain_shrink(#?DOM{kind=#custom{shrink=ShrinkFun,data=Data}}=Self, Value) ->
-    {_,_} = ShrinkFun(Self, Data, Value).
 
 
 %%
