@@ -1,0 +1,3 @@
+{application,triq}.
+{packages,[]}.
+{modules,[triq,triq_app,triq_dom,triq_sup,triq_tests]}.
