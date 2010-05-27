@@ -101,7 +101,7 @@
 	 oneof/1, bool/0, char/0, return/1, vector/2, binary/1, binary/0, non_empty/1, resize/2]).
 
 %% using a generator
--export([bind/2, suchthat/2, pick/2, shrink/2, sample/1, sampleshrink/1, 
+-export([bind/2, bindshrink/2, suchthat/2, pick/2, shrink/2, sample/1, sampleshrink/1, 
 	 seal/1, open/1, peek/1, eval/1, eval/2,
 	 domain/3]).
 
@@ -205,6 +205,8 @@ pick_pair_test() ->
 	    20).
 
 
+shrink({Domain,Value}) ->
+    shrink(Domain,Value).
 
 %% @doc The shrinking step function used internally in Triq.
 %%
@@ -788,6 +790,52 @@ bound_shrink(#?DOM{kind=#bound_domain{dom1=Dom1,val1=Val1,dom2=Dom2,fun2=Fun,siz
 	    { bound_domain(SDom1,SVal1,SDom2,Fun, SampleSize), SVal2 }
     end.
 
+%% @doc support function for `?LETSHRINK([X,...],[domain(),...],domain())'
+%% @private
+bindshrink(Dom,Fun) when is_function(Fun,1) ->
+    domain(letshrink,
+	   fun(_,SampleSize) ->
+		   Box1 = {_,List1} = pick(Dom, SampleSize),
+		   ?assert(is_list(List1) and length(List1)>0 ),
+		   Box2 = {_,List2} = pick(Fun(List1), SampleSize),
+		   
+		   { bindshrink2(Box1,Box1,Box2,Fun,SampleSize), List2 }
+	   end,
+	   undefined).
+
+bindshrink2(OrigBox1,Box1,Box2,Fun,SampleSize) ->
+    domain(letshrink2,
+	   undefined,
+	   fun(_,_) ->
+		   {Dom2,Val2}=Box2,
+		   case shrink(Dom2,Val2) of 
+		       {_,Val2} ->
+			   case shrink({_,List1}=Box1) of
+			       {_, List1} ->
+				   {OrigDom1,OrigList1}=OrigBox1,
+				   Index = random:uniform(length(OrigList1)),
+				   { lists:nth(Index,OrigDom1), 
+				     lists:nth(Index,OrigList1) };
+
+			       {_,NewList1}=NewBox1 ->
+				   {_,NewVal2} = NewBox2 = pick(Fun(NewList1), SampleSize),
+				   { bindshrink2(OrigBox1, 
+						 NewBox1, 
+						 NewBox2, 
+						 Fun, 
+						 SampleSize), 
+				     NewVal2 }
+			   end;
+
+		       {_, NewVal2}=NewBox2 ->
+			   { bindshrink2(OrigBox1,
+					 Box1,
+					 NewBox2, 
+					 Fun,
+					 SampleSize), 
+			     NewVal2 }
+		   end
+	   end).
 
 %% @doc Support function for the ?SUCHTHAT macro.
 %% @private

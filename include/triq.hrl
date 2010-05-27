@@ -45,6 +45,8 @@
 -define(LET(X,Gen1,Gen2), 
 	?DOMAIN_MODULE:bind(Gen1, fun(X)->Gen2 end)).
 -endif.
+-define(LETSHRINK(X,Gen1,Gen2), 
+	?DOMAIN_MODULE:bindshrink(Gen1, fun(X)->Gen2 end)).
 
 -define(SIZED(Size,Gen),
 	?DOMAIN_MODULE:sized(fun(Size) -> Gen end)).
