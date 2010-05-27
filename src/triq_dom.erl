@@ -90,7 +90,6 @@
 -record(resize,{size, dom}).
 -record(bind,  {dom, body}).
 -record(sized, {body}).
--record(return,{value}).
 -record(suchthat,{dom,pred}).
 -record(bound_domain,{dom1,val1,dom2,fun2,size}).
 -record(choose,{min,max}).
@@ -249,9 +248,10 @@ shrink([_|_]=ListDom, [_|_]=List) ->
 %% finally, if the generator is the value itself, it simplifies to itself
 shrink(Any,Any) -> {Any,Any}.
 
-%%
+%% @doc
 %% support functions for the generic shrinking
-%%
+%% @private
+%% @end
 
 -spec shrink_pair([domain(H)|domain(T)], [H|T], non_neg_integer()) -> 
     {[domain(H)|domain(T)],[H|T]}.
@@ -694,7 +694,7 @@ shrink_smaller(_Length) ->
 
 %% decide how many of 
 shrink_members(0) -> 0;
-shrink_members(Length) ->
+shrink_members(Length) when Length>0 ->
     case random:uniform(5) of
 	1 -> random:uniform(5);
 	_ -> 1
@@ -749,6 +749,7 @@ non_empty(#?DOM{}=Dom) ->
 
 
 %% @doc Support function for the `?LET(Vars,Dom1,Dom2)' macro.
+%% @private
 %% @spec bind(domain(T), fun( (T) -> domain(D) )) -> domain(D)
 -spec bind(domain(T::any()), 
 	   fun( (T::any()) -> domain(D) )) -> domain(D).
@@ -789,6 +790,7 @@ bound_shrink(#?DOM{kind=#bound_domain{dom1=Dom1,val1=Val1,dom2=Dom2,fun2=Fun,siz
 
 
 %% @doc Support function for the ?SUCHTHAT macro.
+%% @private
 %% @spec suchthat(domain(T),fun((T) -> boolean())) -> domain(T)
 -spec suchthat(domain(T),fun((T) -> boolean())) -> domain(T).
 	     
@@ -854,11 +856,7 @@ oneof_pick(#?DOM{kind=#oneof{elems=DomList, size=Length}}, SampleSize) ->
 return(Val) -> 
     domain(return,
 	   fun(Self,_) -> {Self,Val} end,
-	   fun(Self,Val) -> {Self,Val} end).
-%    #?DOM{kind=#return{value=Val},
-%	 pick  = fun(#?DOM{kind=#return{value=V}}=Dom,_) -> {Dom,V} end,
-%	 shrink  = fun(Dom,V) -> {Dom,V} end
-%	}.
+	   fun(Self,_) -> {Self,Val} end).
 
 %% @doc Support function for the ?SIZED macro.
 %% @spec sized( fun((integer()) -> domain(T)) ) -> domain(T)
@@ -892,6 +890,8 @@ choose_shrink(#?DOM{kind=#choose{min=M}}=Dom, M) ->
     {Dom,M}.
 
 %% @doc Generates a member of the list `L'.  Shrinks towards the first element of the list.
+%% @spec elements([any()]) -> domain(any())
+%% @end
 -spec elements([T,...]) -> domain(T).	      
 elements(L) when is_list(L), length(L)>0 ->
     #?DOM{kind=#elements{elems=L,size=length(L)}, 
@@ -1055,11 +1055,17 @@ domain(Name,PickFun,ShrinkFun) ->
 
 
 %%-----------------------------------------------------------------------
-%% @doc Equivalent to `eval([], Body)'.  Occurrences of `{call,M,F,A}'
+%% @doc Evaluate `Body'.  Occurrences of `{call,M,F,A}'
 %% is replaced by the result of calling `erlang:apply(M,F,A)', and
 %% occurrences of `{var,Name}' in `Body' are not substituted.  
-
+%%
+%% This is a plain function, not a compile_transform or anything like that,
+%% so nested functions are not traversed in the substitution.  However, nested
+%% occurrences of `{call,M,F,A}' are substituted as one would think: 
+%% depth first, left-to-right.
+%%
 %% @spec eval(Body::any()) -> any() 
+%% @equiv eval([],Body)
 %% @end
 %% -----------------------------------------------------------------------
 eval(Term) ->
@@ -1069,8 +1075,15 @@ eval(Term) ->
 %% @doc Evaluate `Body', replacing occurrences of `{call,M,F,A}' and `{var,N}'.
 %% Occurrences of `{call,M,F,A}' is replaced by `erlang:apply(M,F,A)', and
 %% `{var,Name}' is replaced by the value with key `Name' in `PropList'.
-%% If `Name' is unbound i.e., `Name' does not appear in `PropList', 
-%% `{var,Name}' is unchanged.
+%%
+%% Exceptions happening when calling `erlang:apply/3' are not caught.
+%% If `Name' is unbound i.e., `Name' does not appear in `PropList' or if
+%% `Name' is not an atom, `{var,Name}' is unchanged.
+%%
+%% This is a plain function, not a compile_transform or anything like that,
+%% so nested functions are not traversed in the substitution.  However, nested
+%% occurrences of `{call,M,F,A}' are substituted as one would think: 
+%% depth first, left-to-right.
 %%
 %% @spec eval(PropList::[{atom(),any()}], Body::any()) -> any()
 %% @end
