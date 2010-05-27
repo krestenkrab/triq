@@ -34,7 +34,14 @@
 %% How many times we try pick a value in order to satisfy a ?SUCHTHAT property.
 -define(SUCHTHAT_LOOPS,100).
 
+%% @type pick_fun(T). Picks members of the `domain(T)'.
+%% Return pair of `{domain(T),T}'; the "output domain" is what will
+%% be used for shrinking the value.
 -type pick_fun(T)   :: fun( (domain(T),integer()) -> {domain(T),T} | no_return() ).
+
+%% @type shrink_fun(T). Shrinks members of the `domain(T)'.
+%% Return pair of `{domain(T),T}'; the "output domain" is what will
+%% be used for further shrinking the value.
 -type shrink_fun(T) :: fun( (domain(T),T)         -> {domain(T),T} | no_return() ).
 -type domrec(T) :: {?DOM, 
 		    atom() | tuple(),
@@ -44,10 +51,22 @@
 
 -define(BOX,'@box').
 -record(?BOX, {dom :: domain(T), value :: T}).
--type box(T) :: {?BOX, domain(T), T}.
+
+%%--------------------------------------
+%% @doc A box(T) contains a value of type T, along with
+%% information needed to shrink T.  
+%%
+%% For example, not all integers shrink the same.  If the
+%% integer was generated to produce only even numbers for 
+%% instance, then that knowledge needs to be kept with the
+%% value.  
+%%
+%% @end
+%%--------------------------------------
+-type box(T) :: #?BOX{ dom:: domain(T), value :: T}.
 
 
-%% @type domain(T). 
+%% @type domain(T). Domain of values of type T.
 %% 
 -type domain(T) :: domrec(T) |  T.
 		     
@@ -668,7 +687,8 @@ non_empty(#?DOM{}=Dom) ->
     Dom#?DOM{empty_ok=false}.
 
 
-%% @doc Support function for the `LET(Vars,Dom1,Dom2)' macro.
+%% @doc Support function for the `?LET(Vars,Dom1,Dom2)' macro.
+%% @spec bind(domain(T), fun( (T) -> domain(D) )) -> domain(D)
 -spec bind(domain(T::any()), 
 	   fun( (T::any()) -> domain(D) )) -> domain(D).
 bind(Gen1,FG2) -> 
@@ -707,10 +727,12 @@ bound_shrink(#?DOM{kind=#bound_domain{dom1=Dom1,val1=Val1,dom2=Dom2,fun2=Fun,siz
     end.
 
 
+%% @doc Support function for the ?SUCHTHAT macro.
+%% @spec suchthat(domain(T),fun((T) -> boolean())) -> domain(T)
 -spec suchthat(domain(T),fun((T) -> boolean())) -> domain(T).
 	     
-suchthat(Dom,Fun) ->
-    #?DOM{kind=#suchthat{dom=Dom,pred=Fun},
+suchthat(Dom,Predicate) ->
+    #?DOM{kind=#suchthat{dom=Dom,pred=Predicate},
 	 pick=fun(#?DOM{kind=#suchthat{dom=Dom1,pred=Fun1}},SampleSize) -> 
 		      suchthat_loop(?SUCHTHAT_LOOPS,Dom1,Fun1,SampleSize) 
 	      end
@@ -754,14 +776,28 @@ oneof_pick(#?DOM{kind=#oneof{elems=DomList, size=Length}}, SampleSize) ->
     Dom = lists:nth(random:uniform(Length), DomList),
     pick(Dom, SampleSize).
 
-%% @doc Returns the doamin of Val.
--spec return(Val::Type) -> domain(Type).
+%% @doc Returns the domain containing exactly `Value'.  
+%% Triq uses internally records of type `@'; and so to avoid
+%% interpretation of such values you can wrap it with this.  This would
+%% be the case if you have constants in your domains contain the atom `@'.
+%% I.e., the following would break because Triq tries to interpret the `@':
+%%<pre>?FORALL(X, [int(), {'@', 4}], 
+%%   [IntVal, {'@', 4}] = X
+%%)</pre>
+%%To fix it, do like this:
+%%<pre>?FORALL(X, [int(), return({'@', 4})], 
+%%   [IntVal, {'@', 4}] = X
+%%)</pre>
+%% @spec return(Value::Type) -> domain(Type)
+-spec return(Value::Type) -> domain(Type).
 return(Val) -> 
     #?DOM{kind=#return{value=Val},
 	 pick  = fun(#?DOM{kind=#return{value=V}}=Dom,_) -> {Dom,V} end,
 	 shrink  = fun(Dom,V) -> {Dom,V} end
 	}.
 
+%% @doc Support function for the ?SIZED macro.
+%% @spec sized( fun((integer()) -> domain(T)) ) -> domain(T)
 -spec(sized( fun((integer()) -> domain(T)) ) -> domain(T)).	     
 sized(Fun) ->
     #?DOM{kind=#sized{body=Fun},
