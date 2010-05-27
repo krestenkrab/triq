@@ -10,7 +10,7 @@
 	<style type="text/css">
 		body {
   		margin-top: 1.0em;
-  		background-color: #afb5e4;
+  		background-color: #ffffff;
 		  font-family: "Helvetica,Arial,FreeSans";
   		color: #000000;
     }
@@ -26,7 +26,7 @@
     a { color: #504a1b; }
     .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
     .download { float: right; }
-		pre { background: #000; color: #fff; padding: 15px;}
+    pre { background: #000; color: #fff; padding: 15px;}
     hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
     .footer { text-align:center; padding-top:30px; font-style: italic; }
 	</style>
@@ -45,28 +45,49 @@
         <img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
     </div>
 
-    <h1><a href="http://github.com/krestenkrab/triq">triq</a>
-      <span class="small">by <a href="http://github.com/krestenkrab">krestenkrab</a></span></h1>
+    <h1><a href="http://github.com/krestenkrab/triq">Triq: Trifork QuickCheck</a></h1>
 
     <div class="description">
-      Trifork QuickCheck for Erlang
+      Triq is The Free QuickCheck for Erlang
     </div>
 
-    <h2>License</h2>
-<p>Apache License, Version 2.0</p>
-<h2>Authors</h2>
-<p>Kresten Krab Thorup (krab@trifork.com)<br/><br/>      </p>
-<h2>Contact</h2>
-<p>Kresten Krab Thorup (krab@trifork.com)<br/>      </p>
+    <h2>Contact</h2>
+	<p>Kresten Krab Thorup (krab@trifork.com).</p>
+	<p>To follow updates, check the <a href="http://github.com/krestenkrab/triq/commits/master">commit log here</a>.</p>
+	<p>I often write about triq at my <a href="http://javalimit.com">blog</a>.</p>
+	
+    <h2>Introduction</h2>
+        <p>By enlarge, the triq API is modeled closely after QuviQ <code>eqc</code>, except 
+	   you want to replace any occurrenct of <code>eqc</code> with <code>triq</code>.  
+	   The main supporting module is called <code>triq_dom</code>, corresponding
+	   to eqc's <code>eqc_gen</code>.
+        </p>
+        <pre>-module(my_module).
+-include("triq.hrl").
 
-    <h2>Documentation</h2>
-<p>Online documentation available <a href="doc/index.html">here</a></p>
-
-<h2>Authors</h2>
-<p>Kresten Krab Thorup (krab@trifork.com)<br/><br/>      </p>
-<h2>Contact</h2>
-<p>Kresten Krab Thorup (krab@trifork.com)<br/>      </p>
-
+prop_delete() ->
+     ?FORALL(L,list(int()), 
+        ?IMPLIES(L /= [],
+            ?FORALL(I,elements(L), 
+                ?WHENFAIL(io:format("L=~p, I=~p~n", [L,I]),
+                    not lists:member(I,lists:delete(I,L)))))).
+</pre>
+	<p>To test a property, use <code>triq:check</code> thus:</p>
+<pre>1> triq:check( my_module:prop_delete() )
+</pre>
+        <p>Triq also automatically adds a <code>?MODULE:check/0</code>
+           function to any module including <code>triq.hrl</code>, and
+           auto-exports any function named <code>prop_.../0</code>.
+           The generated <code>?MODULE:check/0</code> will test all
+           properties defined as the result of calling functions
+           named <code>prop_.../0</code>, in a fashion similar
+           to <code>eunit</code>.
+	</p>
+    <h2>EDoc</h2>
+	<p>Generated documentation available <a href="doc/index.html">here</a>.  
+           At present it is rather uncomplete; the interesting modules are
+	   <a href="doc/triq.html">triq</a> and <a href="doc/triq_dom.html">triq_dom</a>.
+        </p>
 
     <h2>Download</h2>
     <p>
