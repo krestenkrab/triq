@@ -38,7 +38,7 @@ triq_test_() ->
 
 boolean_test() ->
     Unique = fun ordsets:from_list/1,
-    ?assertEqual([false, true], Unique(triq_dom:sample(boolean()))).
+    ?assertEqual([false, true], Unique(triq_dom:sample(bool()))).
 
 prop_append() ->
     ?FORALL({Xs,Ys},{list(int()),list(int())},

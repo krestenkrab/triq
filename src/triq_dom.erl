@@ -77,7 +77,7 @@
 
 %% generators
 -export([list/1, tuple/1, int/0, real/0, sized/1, elements/1, any/0, atom/0, atom/1, choose/2,
-	 oneof/1, boolean/0, char/0, return/1, vector/2, binary/1, binary/0, non_empty/1, resize/2]).
+	 oneof/1, bool/0, char/0, return/1, vector/2, binary/1, binary/0, non_empty/1, resize/2]).
 
 %% using a generator
 -export([bind/2, suchthat/2, pick/2, shrink/2, sample/1, sampleshrink/1, 
@@ -486,13 +486,13 @@ real() ->
      }.
 
 
-%% @doc The domain of booleans.
-%% @spec boolean() -> domain( true | false )
-boolean() ->
+%% @doc The domain of booleans.  Shrinks to false.
+%% @spec bool() -> domain( true | false )
+bool() ->
     #?DOM{
       kind=boolean,
       pick=fun(Dom,_) -> {Dom, random:uniform(2)==1} end,
-      shrink=fun(Dom,Val) -> {Dom, Val} end
+      shrink=fun(_,_) -> {false, false} end
      }.
 
 
@@ -733,7 +733,7 @@ smaller(Domain) ->
 
 -spec any() -> domain(any()).
 any()  ->
-    oneof([int(), real(), boolean(), atom(), 
+    oneof([int(), real(), bool(), atom(), 
 
 	   [smaller(?DELAY(any())) | smaller(?DELAY(any()))],
 
