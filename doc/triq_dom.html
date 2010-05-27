@@ -37,12 +37,13 @@
 <tr><td valign="top"><a href="#atom-1">atom/1</a></td><td></td></tr>
 <tr><td valign="top"><a href="#binary-0">binary/0</a></td><td></td></tr>
 <tr><td valign="top"><a href="#binary-1">binary/1</a></td><td></td></tr>
-<tr><td valign="top"><a href="#bind-2">bind/2</a></td><td>Support function for the <code>?LET(Vars,Dom1,Dom2)</code> macro.</td></tr>
 <tr><td valign="top"><a href="#bool-0">bool/0</a></td><td>The domain of booleans.</td></tr>
 <tr><td valign="top"><a href="#char-0">char/0</a></td><td></td></tr>
 <tr><td valign="top"><a href="#choose-2">choose/2</a></td><td></td></tr>
 <tr><td valign="top"><a href="#domain-3">domain/3</a></td><td>Create custom domain.</td></tr>
 <tr><td valign="top"><a href="#elements-1">elements/1</a></td><td>Generates a member of the list <code>L</code>.</td></tr>
+<tr><td valign="top"><a href="#eval-1">eval/1</a></td><td>Evaluate <code>Body</code>.</td></tr>
+<tr><td valign="top"><a href="#eval-2">eval/2</a></td><td>Evaluate <code>Body</code>, replacing occurrences of <code>{call,M,F,A}</code> and <code>{var,N}</code>.</td></tr>
 <tr><td valign="top"><a href="#int-0">int/0</a></td><td>The domain of integers.</td></tr>
 <tr><td valign="top"><a href="#list-1">list/1</a></td><td>
   Returns the domain of lists of the argument.</td></tr>
@@ -60,7 +61,6 @@
 <tr><td valign="top"><a href="#seal-1">seal/1</a></td><td>Get the domain of boxes of T.</td></tr>
 <tr><td valign="top"><a href="#shrink-2">shrink/2</a></td><td>The shrinking step function used internally in Triq.</td></tr>
 <tr><td valign="top"><a href="#sized-1">sized/1</a></td><td>Support function for the ?SIZED macro.</td></tr>
-<tr><td valign="top"><a href="#suchthat-2">suchthat/2</a></td><td>Support function for the ?SUCHTHAT macro.</td></tr>
 <tr><td valign="top"><a href="#tuple-1">tuple/1</a></td><td></td></tr>
 <tr><td valign="top"><a href="#vector-2">vector/2</a></td><td></td></tr>
 </table>
@@ -91,11 +91,6 @@
 <div class="spec">
 <p><tt>binary(Size) -&gt; any()</tt></p>
 </div>
-
-<h3 class="function"><a name="bind-2">bind/2</a></h3>
-<div class="spec">
-<p><tt>bind(Gen1::<a href="#type-domain">domain(T)</a>, FG2::<a href="#type-fun">'fun'((T) -&gt; <a href="#type-domain">domain(D)</a>)</a>) -&gt; <a href="#type-domain">domain(D)</a></tt></p>
-</div><p>Support function for the <code>?LET(Vars,Dom1,Dom2)</code> macro.</p>
 
 <h3 class="function"><a name="bool-0">bool/0</a></h3>
 <div class="spec">
@@ -140,8 +135,39 @@ to each invocation of both the picking and the shrinking functions.</p>
 
 <h3 class="function"><a name="elements-1">elements/1</a></h3>
 <div class="spec">
-<p><tt>elements(L) -&gt; any()</tt></p>
+<p><tt>elements(L::[any()]) -&gt; <a href="#type-domain">domain(any())</a></tt></p>
 </div><p>Generates a member of the list <code>L</code>.  Shrinks towards the first element of the list.</p>
+
+<h3 class="function"><a name="eval-1">eval/1</a></h3>
+<div class="spec">
+<p><tt>eval(Body::any()) -&gt; any()</tt></p>
+</div><p>Equivalent to <a href="#eval-2"><tt>eval([], Body)</tt></a>.</p>
+<p><p>Evaluate <code>Body</code>.  Occurrences of <code>{call,M,F,A}</code>
+  is replaced by the result of calling <code>erlang:apply(M,F,A)</code>, and
+  occurrences of <code>{var,Name}</code> in <code>Body</code> are not substituted.</p>
+ 
+  This is a plain function, not a compile_transform or anything like that,
+  so nested functions are not traversed in the substitution.  However, nested
+  occurrences of <code>{call,M,F,A}</code> are substituted as one would think:
+  depth first, left-to-right.
+ </p>
+
+<h3 class="function"><a name="eval-2">eval/2</a></h3>
+<div class="spec">
+<p><tt>eval(PropList::[{atom(), any()}], Body::any()) -&gt; any()</tt></p>
+</div><p><p>Evaluate <code>Body</code>, replacing occurrences of <code>{call,M,F,A}</code> and <code>{var,N}</code>.
+  Occurrences of <code>{call,M,F,A}</code> is replaced by <code>erlang:apply(M,F,A)</code>, and
+  <code>{var,Name}</code> is replaced by the value with key <code>Name</code> in <code>PropList</code>.</p>
+ 
+  <p>Exceptions happening when calling <code>erlang:apply/3</code> are not caught.
+  If <code>Name</code> is unbound i.e., <code>Name</code> does not appear in <code>PropList</code> or if
+  <code>Name</code> is not an atom, <code>{var,Name}</code> is unchanged.</p>
+ 
+  This is a plain function, not a compile_transform or anything like that,
+  so nested functions are not traversed in the substitution.  However, nested
+  occurrences of <code>{call,M,F,A}</code> are substituted as one would think:
+  depth first, left-to-right.
+ </p>
 
 <h3 class="function"><a name="int-0">int/0</a></h3>
 <div class="spec">
@@ -264,11 +290,6 @@ i.e. value cound not be shrunk, the output is equal to the input.</p>
 <p><tt>sized(Fun::<a href="#type-fun">'fun'((integer()) -&gt; <a href="#type-domain">domain(T)</a>)</a>) -&gt; <a href="#type-domain">domain(T)</a></tt></p>
 </div><p>Support function for the ?SIZED macro.</p>
 
-<h3 class="function"><a name="suchthat-2">suchthat/2</a></h3>
-<div class="spec">
-<p><tt>suchthat(Dom::<a href="#type-domain">domain(T)</a>, Predicate::<a href="#type-fun">'fun'((T) -&gt; <a href="#type-boolean">boolean()</a>)</a>) -&gt; <a href="#type-domain">domain(T)</a></tt></p>
-</div><p>Support function for the ?SUCHTHAT macro.</p>
-
 <h3 class="function"><a name="tuple-1">tuple/1</a></h3>
 <div class="spec">
 <p><tt>tuple(ElemDom::<a href="#type-domain">domain(ElemType::any())</a>) -&gt; <a href="#type-domain">domain(tuple(ElemType))</a></tt></p>
@@ -281,6 +302,6 @@ i.e. value cound not be shrunk, the output is equal to the input.</p>
 <hr>
 
 <div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
-<p><i>Generated by EDoc, May 27 2010, 11:41:57.</i></p>
+<p><i>Generated by EDoc, May 28 2010, 00:40:18.</i></p>
 </body>
 </html>
