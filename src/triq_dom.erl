@@ -34,6 +34,9 @@
 %% How many times we try pick a value in order to satisfy a ?SUCHTHAT property.
 -define(SUCHTHAT_LOOPS,100).
 
+%% how many times we try to shrink a value before we bail out
+-define(SHRINK_LOOPS,100).
+
 %% @type pick_fun(T). Picks members of the `domain(T)'.
 %% Return pair of `{domain(T),T}'; the "output domain" is what will
 %% be used for shrinking the value.
@@ -315,7 +318,7 @@ shrink_list_samesize(ListDom,List,_,0) ->
 shrink_list_samesize(ListDom,List,Length,NAttempts) when is_list(List) ->
     ?assert(length(ListDom) == length(List)),
 
-    HowManyToShrink = random:uniform(Length+1),
+    HowManyToShrink = shrink_members(Length),
     case shrink_list_members(ListDom, List, Length, HowManyToShrink) of
 
 	% it did not shrink, try again
@@ -405,6 +408,9 @@ list_pick(#?DOM{kind=#list{elem=ElemDom},empty_ok=EmptyOK},
 shrinkable_list(ListDom, List, 1, false) ->
     {ListDom, List};
 
+shrinkable_list(_, [], 0, _) ->
+    {[], []};
+
 shrinkable_list(ListDom, List, Len, EmptyOK) ->
     ?assert(length(List) == length(ListDom)),
     ?assert(length(List) == Len),
@@ -413,16 +419,29 @@ shrinkable_list(ListDom, List, Len, EmptyOK) ->
     {SDom,List}.
 
 list_shrink(#?DOM{kind={shrinkable_list, ListDom, Len}, empty_ok=EmptyOK}, List) ->
-    case shrink(ListDom,List) of
-	{_, List} when EmptyOK, (Len>0) ->
 
-	    RemIdx = random:uniform(Len),
-	    shrinkable_list( without(RemIdx, ListDom), without(RemIdx, List), Len-1, EmptyOK);
+    ?assert(length(List) == Len),
 
-	{ShrunkenListDom,ShrunkenList} -> 
-	    shrinkable_list(ShrunkenListDom, ShrunkenList, Len, EmptyOK)
+    SmallerOK = ((EmptyOK and (Len>0)) or (len>1)),
+
+    case SmallerOK and (random:uniform(5) == 1) of
+	true ->
+	    shorter_list(ListDom,List,Len,EmptyOK);
+
+	false ->
+	    case shrink(ListDom,List) of
+		{_, List} when SmallerOK ->
+		    shorter_list(ListDom,List,Len,EmptyOK);
+		
+		{ShrunkenListDom,ShrunkenList} -> 
+		    shrinkable_list(ShrunkenListDom, ShrunkenList, Len, EmptyOK)
+	    end
     end.
 
+shorter_list(ListDom,List,Len,EmptyOK) ->
+    RemIdx = random:uniform(Len),
+    shrinkable_list( without(RemIdx, ListDom), without(RemIdx, List), Len-1, EmptyOK).
+    
 
 %%
 %% Generator for tuples
@@ -640,21 +659,48 @@ vector_pick(#?DOM{kind=#vector{size=Size,elem=ElemDom}}, SampleSize) ->
 	  Size).
     
 
-
+%%
+%% @doc Shrink `List' where all elements have the same domain `ElemDom'.
+%% If parameter `AllowSmaller' is true, then we may also make the list
+%% shorter.
+%% @end
+shrink_list_with_elemdom(_,List,0,_) -> List;
 shrink_list_with_elemdom(ElemDom,List,Length,AllowSmaller) ->
-    HowManyToShrink = random:uniform(Length),
-    case shrink_list_members_generic(ElemDom, List, Length, HowManyToShrink) of
 
-	%% can we remove an element?
-	List when AllowSmaller ->
-	    RemIdx = random:uniform(Length),
-	    without(RemIdx, List);
-
-	%% it changed!
-	ShrunkenList ->
-	    ShrunkenList
+    %% 1/5 of the time, try shrinking by removing an elemet
+    case AllowSmaller andalso shrink_smaller(Length) of
+	true -> 
+	    RemoveIdx = random:uniform(Length),
+	    without(RemoveIdx, List);
+	false ->
+	    HowManyToShrink = shrink_members(Length),
+	    case shrink_list_members_generic(ElemDom, List, Length, HowManyToShrink) of
+		
+		%% can we remove an element?
+		List when AllowSmaller ->
+		    RemIdx = random:uniform(Length),
+		    without(RemIdx, List);
+		
+		%% it changed!
+		ShrunkenList ->
+		    ShrunkenList
+	    end
     end.
     
+%% decide if something of size `Length' should be shrunk by removing an element
+shrink_smaller(0) -> false;
+shrink_smaller(_Length) ->
+    random:uniform(5)==1.
+
+%% decide how many of 
+shrink_members(0) -> 0;
+shrink_members(Length) ->
+    case random:uniform(5) of
+	1 -> random:uniform(5);
+	_ -> 1
+    end.
+
+
 
 %%
 %% Same, but when component element is fixed (also returns List, not {Dom,List})!
@@ -662,6 +708,11 @@ shrink_list_with_elemdom(ElemDom,List,Length,AllowSmaller) ->
 -spec shrink_list_members_generic(domain(T), [T], non_neg_integer(), integer()) -> [T].
 shrink_list_members_generic(_, List, _, 0) -> List;
 shrink_list_members_generic(#?DOM{}=ElemDom, List, Len, HowMany) ->
+    NextList = shrink_list_N(ElemDom,List,Len, ?SHRINK_LOOPS),
+    shrink_list_members_generic(ElemDom, NextList, Len, HowMany-1).
+
+shrink_list_N(_, List, _, 0) -> List;
+shrink_list_N(#?DOM{}=ElemDom, List, Len, N) ->
     ?assert(Len == length(List)),
 
     %%
@@ -669,17 +720,27 @@ shrink_list_members_generic(#?DOM{}=ElemDom, List, Len, HowMany) ->
     %%
     RemIdx = random:uniform(Len),    
     Elm = lists:nth(RemIdx, List),
+    %% io:format("shrinking elem ~p (~p) of ~p~n", [RemIdx,Elm,List]),
 
-    NextList = 
-	case shrink(ElemDom,Elm) of
-	    {_,Elm} -> 
-		List;
-	    {_,SElm} ->
-		lists:sublist(List,RemIdx-1) ++ [SElm] ++ lists:sublist(List,RemIdx+1,Len)
-	end,
+    case shrink(ElemDom,Elm) of
+	{_,Elm} -> 
+	    shrink_list_N(ElemDom, List, Len, N-1);
+	{_,SElm} ->
+	    lists:sublist(List,RemIdx-1) ++ [SElm] ++ lists:sublist(List,RemIdx+1,Len)
+    end.
 
-    shrink_list_members_generic(ElemDom, NextList, Len, HowMany-1).
-
+%%
+%% simple loop to try N shrinks until value is shrunken.
+%%
+try_shrink(Dom,Val,0) -> { Dom,Val };
+try_shrink(Dom,Val,N) ->
+    case shrink(Dom,Val) of
+	{_,Val} ->
+	    io:format("shrink {~p,~p} failed~n", [Dom,Val]),
+	    try_shrink(Dom,Val,N-1);
+	Shrunk -> Shrunk
+    end.
+    
     
 
 
@@ -791,10 +852,13 @@ oneof_pick(#?DOM{kind=#oneof{elems=DomList, size=Length}}, SampleSize) ->
 %% @spec return(Value::Type) -> domain(Type)
 -spec return(Value::Type) -> domain(Type).
 return(Val) -> 
-    #?DOM{kind=#return{value=Val},
-	 pick  = fun(#?DOM{kind=#return{value=V}}=Dom,_) -> {Dom,V} end,
-	 shrink  = fun(Dom,V) -> {Dom,V} end
-	}.
+    domain(return,
+	   fun(Self,_) -> {Self,Val} end,
+	   fun(Self,Val) -> {Self,Val} end).
+%    #?DOM{kind=#return{value=Val},
+%	 pick  = fun(#?DOM{kind=#return{value=V}}=Dom,_) -> {Dom,V} end,
+%	 shrink  = fun(Dom,V) -> {Dom,V} end
+%	}.
 
 %% @doc Support function for the ?SIZED macro.
 %% @spec sized( fun((integer()) -> domain(T)) ) -> domain(T)
