@@ -140,7 +140,7 @@ check_input(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 	    end;
 	
 	{'prop:forall', Dom2, Syntax2, Fun2, Body2} ->
-	    check_forall(0, ?TEST_COUNT, Dom2, Fun2, Syntax2, QCT#triq{body=Body2}, gb_sets:new());
+	    check_forall(0, ?TEST_COUNT, Dom2, Fun2, Syntax2, QCT#triq{body=Body2});
 
 	Any ->
 	    DoReport(fail,Any),
@@ -211,35 +211,28 @@ check_timeout(Fun,Input,IDom,Limit,Fun2,#triq{count=Count,report=DoReport}=QCT) 
 
     Yield.
 
-check_forall(N,N,_,_,_,#triq{count=Count}, _) ->
+check_forall(N,N,_,_,_,#triq{count=Count}) ->
     {success, Count};
 
-check_forall(N,NMax,Dom,Fun,Syntax,#triq{context=Context,report=DoReport,count=Count}=QCT, Tested) ->
+check_forall(N,NMax,Dom,Fun,Syntax,#triq{context=Context}=QCT) ->
 
     DomSize = 2 + 2*N,
 
     {InputDom,Input} = pick(Dom, DomSize),
 
-    IsTested = gb_sets:is_member(Input,Tested),
-    if 
-	IsTested ->
-	    DoReport(skip,true),
-	    check_forall(N+1,NMax,Dom,Fun,Syntax,QCT#triq{count=Count+1},Tested);
-
-	true ->
-	    case check_input(Fun,Input,InputDom,QCT#triq{size=DomSize, 
-					      context=[{Syntax,Fun,Input,InputDom}|Context]}) of
-
-		%% it did not fail, try again with N := N+1
-		{success,NewCount} -> 
-		    NewTested = gb_sets:add(Input,Tested),
-		    check_forall(N+1, NMax, Dom, Fun, Syntax, QCT#triq{count=NewCount}, NewTested);
-
-		%% it failed, report it!
-		{failure, _, _, _, Ctx} ->
-		    {failure, Fun, Input, InputDom, Ctx}
-		
-	    end
+    case check_input(Fun,Input,InputDom,
+		     QCT#triq{size=DomSize, 
+			      context=[{Syntax,Fun,Input,InputDom}|Context]}) 
+	of
+	
+	%% it did not fail, try again with N := N+1
+	{success,NewCount} -> 
+	    check_forall(N+1, NMax, Dom, Fun, Syntax, QCT#triq{count=NewCount});
+	
+	%% it failed, report it!
+	{failure, _, _, _, Ctx} ->
+	    {failure, Fun, Input, InputDom, Ctx}
+    
     end.
 
 

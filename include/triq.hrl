@@ -59,7 +59,8 @@
 %% import domain functions (a.k.a. generators)
 %%
 -import(?DOMAIN_MODULE, [list/1, tuple/1, int/0, real/0, elements/1, any/0, atom/0, 
-		   choose/2, bool/0, char/0, oneof/1, return/1, vector/2, binary/1]).
+		   choose/2, bool/0, char/0, oneof/1, return/1, vector/2, binary/1,
+			shrink_without_duplicates/1]).
 
 
 %%

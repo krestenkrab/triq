@@ -77,7 +77,7 @@ prop_binop() ->
 
 prop_timeout() ->
  fails(
-   ?FORALL(N,choose(50,150),
+   ?FORALL(N,shrink_without_duplicates(choose(50,150)),
      ?TIMEOUT(100,
        timer:sleep(N) == ok))
 )

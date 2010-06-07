@@ -98,12 +98,12 @@
 
 %% generators
 -export([list/1, tuple/1, int/0, real/0, sized/1, elements/1, any/0, atom/0, atom/1, choose/2,
-	 oneof/1, bool/0, char/0, return/1, vector/2, binary/1, binary/0, non_empty/1, resize/2]).
+	 oneof/1, frequency/1, bool/0, char/0, return/1, vector/2, binary/1, binary/0, non_empty/1, resize/2]).
 
 %% using a generator
 -export([bind/2, bindshrink/2, suchthat/2, pick/2, shrink/2, sample/1, sampleshrink/1, 
 	 seal/1, open/1, peek/1, eval/1, eval/2,
-	 domain/3]).
+	 domain/3, shrink_without_duplicates/1]).
 
 
 %%
@@ -887,6 +887,34 @@ oneof_pick(#?DOM{kind=#oneof{elems=DomList, size=Length}}, SampleSize) ->
     Dom = lists:nth(random:uniform(Length), DomList),
     pick(Dom, SampleSize).
 
+frequency(GenList) when is_list(GenList) ->
+    Sum = lists:foldl(fun({Freq, _}, Acc) ->
+			      Freq + Acc
+		      end,
+		      0,
+		      GenList),
+    
+    domain(frequency,
+	   fun(_,SampleSize) ->
+		   Limit = random:uniform(Sum),
+		   {ok,Gen} = lists:foldl(
+			   fun (_, {ok, _}=Acc) ->
+				   Acc;
+			       ({Freq,Generator}, {AccSum, none}) ->
+				   NextAcc = AccSum+Freq,
+				   if NextAcc >= Limit ->
+					   {ok, Generator};
+				      true ->
+					   {NextAcc, none}
+				   end
+			   end,
+			   {0, none},
+			   GenList),
+		   pick(Gen, SampleSize)
+	   end,
+	   undefined).
+
+
 %% @doc Returns the domain containing exactly `Value'.  
 %% Triq uses internally records of type `@'; and so to avoid
 %% interpretation of such values you can wrap it with this.  This would
@@ -961,6 +989,36 @@ elements_shrink(#?DOM{kind=#elements{elems=Elems,picked=Picked}=Kind}=Dom, _) wh
 elements_shrink(Dom,Value) ->
     { Dom, Value }.
 
+
+shrink_without_duplicates(Dom) ->
+    domain(shrink_without_duplicates1,
+	   fun(_,GS) ->
+		   {Dom,Val} = pick(Dom,GS),
+		   Tested = gb_sets:add(Val, gb_sets:new()),
+		   {shrink_without_duplicates(Dom,Tested), Val}
+	   end,
+	   undefined).
+			   
+shrink_without_duplicates(Dom,Tested) ->
+    domain(shrink_without_duplicates2,
+	   undefined,
+	   fun(_,Val) ->
+		   shrink_without_duplicates_loop(Dom,Val,Tested,?SHRINK_LOOPS)
+	   end).
+			   
+shrink_without_duplicates_loop(_,Val,_,0) ->
+    Val;
+shrink_without_duplicates_loop(Dom,Val,Tested,Tries) ->
+    {Dom2,Val2} = shrink(Dom,Val),
+    case gb_sets:is_member(Val2, Tested) of
+	true ->
+	    shrink_without_duplicates_loop(Dom,Val,Tested,Tries-1);
+	false ->
+	    {shrink_without_duplicates(Dom2, gb_sets:add(Val, Tested)),
+	     Val2}
+    end.
+    
+			   
 
 
 %%--------------------------------------------------------------------
