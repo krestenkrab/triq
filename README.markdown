@@ -65,6 +65,30 @@ Simplified:
 false
 2> </pre>
 
+You can get the values used for the failing test with `counterexample`,
+and reuse the same test values with `check/2`:
+<pre>3> A = triq:counterexample(triq_tests:xprop_delete()).
+x.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxFailed!
+L=[3,2,1,1,1], I=1
+
+Failed after 101 tests with false
+Simplified:
+	L = [0,0]
+	I = 0
+[[0,0],0]
+4> A.
+[[0,0],0]
+5> triq:check(triq_tests:xprop_delete(), A).
+Failed!
+L=[0,0], I=0
+
+Failed after 1 tests with false
+Simplified:
+	L = [0,0]
+	I = 0
+false
+6> </pre>
+
 Modules compiled with the `triq.hrl` header, auto-export all functions named `prop_*`, 
 and have a function added called `check/0` which runs `triq:check/1` on all the properties in the module.
 
