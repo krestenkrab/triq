@@ -29,7 +29,7 @@
 %%
 -define(TEST_COUNT, 100).
 
--export([check/1, fails/1, module/1,  
+-export([check/1, check/2, fails/1, module/1,  
 	 counterexample/0, counterexample/1]).
 
 -import(triq_dom, [pick/2, shrink/2]).
@@ -40,7 +40,8 @@
 	      report= fun report_none/2,
 	      shrinking= false,
 	      result=undefined,
-	      body}).
+	      body,
+	      values=[]}).
 
 %%
 %% Default reporting function, ... is silent
@@ -214,11 +215,17 @@ check_timeout(Fun,Input,IDom,Limit,Fun2,#triq{count=Count,report=DoReport}=QCT) 
 check_forall(N,N,_,_,_,#triq{count=Count}, _) ->
     {success, Count};
 
-check_forall(N,NMax,Dom,Fun,Syntax,#triq{context=Context,report=DoReport,count=Count}=QCT, Tested) ->
+check_forall(N,NMax,Dom,Fun,Syntax,#triq{context=Context,report=DoReport,count=Count,values=Values}=QCT, Tested) ->
 
     DomSize = 2 + 2*N,
 
-    {InputDom,Input} = pick(Dom, DomSize),
+    {{InputDom,Input},NewValues} =
+	case Values of
+	    [V|Vs] ->
+		{{V, V}, Vs};
+	    [] ->
+		{pick(Dom, DomSize), []}
+	end,
 
     IsTested = gb_sets:is_member(Input,Tested),
     if 
@@ -228,7 +235,8 @@ check_forall(N,NMax,Dom,Fun,Syntax,#triq{context=Context,report=DoReport,count=C
 
 	true ->
 	    case check_input(Fun,Input,InputDom,QCT#triq{size=DomSize, 
-					      context=[{Syntax,Fun,Input,InputDom}|Context]}) of
+					      context=[{Syntax,Fun,Input,InputDom}|Context],
+					      values=NewValues}) of
 
 		%% it did not fail, try again with N := N+1
 		{success,NewCount} -> 
@@ -290,11 +298,23 @@ check(Module) when is_atom(Module) ->
 
 
 check(Property) ->
+    check(Property, []).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Run QuickCheck on a property, specifying a specific example to test.
+%% The example can be obtained by calling {@link counterexample/0}.
+%%
+%% @spec check( property(), [any()] ) -> any()
+%% @end
+%%--------------------------------------------------------------------
+
+check(Property, Counterexample) ->
 
     case check_input(fun(nil)->Property end, 
 	       nil,
 	       nil,
-	       #triq{report=fun report/2}) of
+	       #triq{report=fun report/2,values=Counterexample}) of
 
 	{failure, Fun, Input, InputDom, #triq{count=Count,context=Ctx,body=_Body,result=Error}} ->
 

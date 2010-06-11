@@ -195,3 +195,11 @@ elements_test() ->
 		     false)),
     one = X.
 
+%%
+%% Test passing counterexamples to properties
+%%
+recheck_test_() ->
+    Good = [[1,2], 1],
+    Bad = [[1,1], 1],
+    [?_assertEqual(true, triq:check(xprop_delete(), Good)),
+     ?_assertEqual(false, triq:check(xprop_delete(), Bad))].
