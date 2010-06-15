@@ -29,7 +29,7 @@
 %%
 -define(TEST_COUNT, 100).
 
--export([check/1, fails/1, module/1,  
+-export([check/1, check/2, fails/1, module/1,  
 	 counterexample/0, counterexample/1]).
 
 -import(triq_dom, [pick/2, shrink/2]).
@@ -37,6 +37,7 @@
 -record(triq, {count=0,
 	      context=[],
 	      size=?TEST_COUNT,  %% todo: remove this
+	      run_iter=?TEST_COUNT,
 	      report= fun report_none/2,
 	      shrinking= false,
 	      result=undefined,
@@ -140,7 +141,7 @@ check_input(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 	    end;
 	
 	{'prop:forall', Dom2, Syntax2, Fun2, Body2} ->
-	    check_forall(0, ?TEST_COUNT, Dom2, Fun2, Syntax2, QCT#triq{body=Body2});
+	    check_forall(0, QCT#triq.run_iter, Dom2, Fun2, Syntax2, QCT#triq{body=Body2});
 
 	Any ->
 	    DoReport(fail,Any),
@@ -278,16 +279,18 @@ module(Module) when is_atom(Module) ->
 %% @spec check( atom() | property() ) -> any()
 %% @end
 %%--------------------------------------------------------------------
-check(Module) when is_atom(Module) ->
+check(X) ->
+    check(X, ?TEST_COUNT).
+
+check(Module, _RunIters) when is_atom(Module) ->
     module(Module);
 
-
-check(Property) ->
+check(Property, RunIters) when RunIters>0 ->
 
     case check_input(fun(nil)->Property end, 
 	       nil,
 	       nil,
-	       #triq{report=fun report/2}) of
+	       #triq{report=fun report/2, run_iter=RunIters}) of
 
 	{failure, Fun, Input, InputDom, #triq{count=Count,context=Ctx,body=_Body,result=Error}} ->
 
