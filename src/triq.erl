@@ -29,7 +29,7 @@
 %%
 -define(TEST_COUNT, 100).
 
--export([check/1, check/2, fails/1, module/1,  
+-export([check/1, check/2, check/3, fails/1, module/1,  
 	 counterexample/0, counterexample/1]).
 
 -import(triq_dom, [pick/2, shrink/2]).
@@ -41,7 +41,8 @@
 	      report= fun report_none/2,
 	      shrinking= false,
 	      result=undefined,
-	      body}).
+	      body,
+	      values=[]}).
 
 %%
 %% Default reporting function, ... is silent
@@ -215,15 +216,22 @@ check_timeout(Fun,Input,IDom,Limit,Fun2,#triq{count=Count,report=DoReport}=QCT) 
 check_forall(N,N,_,_,_,#triq{count=Count}) ->
     {success, Count};
 
-check_forall(N,NMax,Dom,Fun,Syntax,#triq{context=Context}=QCT) ->
+check_forall(N,NMax,Dom,Fun,Syntax,#triq{context=Context,values=Values}=QCT) ->
 
     DomSize = 2 + 2*N,
 
-    {InputDom,Input} = pick(Dom, DomSize),
+    {{InputDom,Input},NewValues} =
+	case Values of
+	    [V|Vs] ->
+		{{V, V}, Vs};
+	    [] ->
+		{pick(Dom, DomSize), []}
+	end,
 
     case check_input(Fun,Input,InputDom,
 		     QCT#triq{size=DomSize, 
-			      context=[{Syntax,Fun,Input,InputDom}|Context]}) 
+			      context=[{Syntax,Fun,Input,InputDom}|Context],
+			      values=NewValues}) 
 	of
 	
 	%% it did not fail, try again with N := N+1
@@ -279,18 +287,37 @@ module(Module) when is_atom(Module) ->
 %% @spec check( atom() | property() ) -> any()
 %% @end
 %%--------------------------------------------------------------------
-check(X) ->
-    check(X, ?TEST_COUNT).
+check(Module) when is_atom(Module)->
+    module(Module);
+
+check(Property) ->
+    check(Property, [], ?TEST_COUNT).
 
 check(Module, _RunIters) when is_atom(Module) ->
     module(Module);
 
-check(Property, RunIters) when RunIters>0 ->
+check(Property, RunIters) when is_integer(RunIters), RunIters>0 ->
+    check(Property, [], RunIters);
+
+check(Property, CounterExample) when is_list(CounterExample) ->
+    check(Property, CounterExample, ?TEST_COUNT).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Run QuickCheck on a property, specifying a specific example to test.
+%% The example can be obtained by calling {@link counterexample/0}.
+%%
+%% @spec check( property(), [any()], integer() ) -> any()
+%% @end
+%%--------------------------------------------------------------------
+
+check(Property, Counterexample, RunIters) ->
 
     case check_input(fun(nil)->Property end, 
 	       nil,
 	       nil,
-	       #triq{report=fun report/2, run_iter=RunIters}) of
+	       #triq{report=fun report/2, run_iter=RunIters, values=Counterexample}) of
 
 	{failure, Fun, Input, InputDom, #triq{count=Count,context=Ctx,body=_Body,result=Error}} ->
 
