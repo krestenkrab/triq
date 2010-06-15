@@ -203,3 +203,7 @@ recheck_test_() ->
     Bad = [[1,1], 1],
     [?_assertEqual(true, triq:check(xprop_delete(), Good)),
      ?_assertEqual(false, triq:check(xprop_delete(), Bad))].
+
+counterexample_test() ->
+    Counterexample = triq:counterexample(xprop_delete()),
+    ?assertEqual(false, triq:check(xprop_delete(), Counterexample)).
