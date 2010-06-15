@@ -887,6 +887,10 @@ oneof_pick(#?DOM{kind=#oneof{elems=DomList, size=Length}}, SampleSize) ->
     Dom = lists:nth(random:uniform(Length), DomList),
     pick(Dom, SampleSize).
 
+%% --------------------------------------------------------------
+%% @doc Choose domain from list [{Weight, Domain}, ...] 
+%% @end
+%% --------------------------------------------------------------
 frequency(GenList) when is_list(GenList) ->
     Sum = lists:foldl(fun({Freq, _}, Acc) ->
 			      Freq + Acc
