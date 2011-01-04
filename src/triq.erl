@@ -332,7 +332,7 @@ check(Property, Counterexample, RunIters) ->
 	    
 	    %% Run the shrinking function
 	    %%
-	    Simp = shrink_loop(Fun,Input,InputDom,?SHRINK_COUNT,tl(Context),gb_sets:new()),
+	    Simp = shrink_loop(Fun,Input,InputDom,?SHRINK_COUNT,tl(Context)),
 
 	    %%
 	    %% Compute the counter example
@@ -377,11 +377,15 @@ counterexample() ->
 %%
 
 shrink_deeper(Input,[{_,F1,I1,G1}|T]) -> 
-    [Input | shrink_loop(F1,I1,G1,?SHRINK_COUNT,T,gb_sets:new())];
+    [Input | shrink_loop(F1,I1,G1,?SHRINK_COUNT,T)];
 shrink_deeper(Input,[]) -> [Input].
 
 
 %% this is the main logic for the simplify function
+
+shrink_loop(Fun,Input,InputDom,GS,Context) ->
+    InitialTested = gb_sets:add(Input,gb_sets:new()),
+    shrink_loop(Fun,Input,InputDom,GS,Context, InitialTested).
 
 shrink_loop(_,Input,_,0,Context,_) ->
     shrink_deeper(Input,Context);
