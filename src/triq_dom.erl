@@ -423,8 +423,7 @@ shrinkable_list(ListDom, List, Len, EmptyOK) ->
 list_shrink(#?DOM{kind={shrinkable_list, ListDom, Len}, empty_ok=EmptyOK}, List) ->
 
     ?assert(length(List) == Len),
-
-    SmallerOK = ((EmptyOK and (Len>0)) or (len>1)),
+    SmallerOK = ((EmptyOK and (Len>0)) or (Len>1)),
 
     case SmallerOK and (random:uniform(5) == 1) of
 	true ->
@@ -441,9 +440,45 @@ list_shrink(#?DOM{kind={shrinkable_list, ListDom, Len}, empty_ok=EmptyOK}, List)
     end.
 
 shorter_list(ListDom,List,Len,EmptyOK) ->
-    RemIdx = random:uniform(Len),
-    shrinkable_list( without(RemIdx, ListDom), without(RemIdx, List), Len-1, EmptyOK).
-    
+    case random:uniform(3) of
+	1 -> %% Remove one element.
+	    RemIdx = random:uniform(Len),
+	    shrinkable_list( without(RemIdx, ListDom), without(RemIdx, List), Len-1, EmptyOK);
+	2 -> %% Remove or keep a random sublist.
+	    Idx1 = random:uniform(Len),
+	    Idx2 = random:uniform(Len),
+	    if Idx1 < Idx2 ->	      % Remove the sublist [Idx1;Idx2]
+		    shrinkable_list( without(Idx1,Idx2, ListDom),
+				     without(Idx1,Idx2, List),
+				     Len-(Idx2-Idx1), EmptyOK);
+	       true ->                % Remove all but the sublist [Idx2;Idx1]
+		    NewLen = Idx1-Idx2+1,
+		    shrinkable_list( lists:sublist(ListDom, Idx2, NewLen),
+				     lists:sublist(List   , Idx2, NewLen),
+				     NewLen, EmptyOK)
+	    end;
+	3 -> %% Remove a random sublist.
+	    Zipped = lists:zip(ListDom, List),
+	    TrueTreshold  = random:uniform(),
+	    FalseTreshold = random:uniform(),
+	    %% This may happen to be the original list again.
+	    Pruned = markov_prune_list(Zipped, TrueTreshold, FalseTreshold, false),
+	    NewLen = length(Pruned),
+	    {ListDom2,List2} = lists:unzip(Pruned),
+	    shrinkable_list( ListDom2, List2, NewLen, EmptyOK)
+    end.
+
+markov_prune_list([], _,_,_) -> [];
+markov_prune_list([H|T], TrueTreshold, FalseTreshold, Prev) ->
+    Rnd = random:uniform(),
+    Threshold = if Prev -> TrueTreshold;
+		   true -> FalseTreshold
+		end,
+    Include = Rnd > Threshold,
+    NewTail = markov_prune_list(T, TrueTreshold, FalseTreshold, Include),
+    if Include -> [H|NewTail];
+       true    -> NewTail
+    end.
 
 %%
 %% Generator for tuples
@@ -1239,6 +1274,11 @@ without(RemIdx,List) when is_list(List) ->
 without(RemIdx,Tup) when is_tuple(Tup) ->
     list_to_tuple(without(RemIdx, tuple_to_list(Tup))).
 
+%% remove the RemIdx1 through RemIdx2-1'th element of List [1-indexed]
+without(RemIdx1, RemIdx2, List) when is_list(List) ->
+    {First,Tail}   = lists:split(RemIdx1-1,List),
+    {_Middle,Rest} = lists:split(RemIdx2-RemIdx1,Tail),
+    First ++ Rest.
 
 repeat(_,0) ->
     ok;
