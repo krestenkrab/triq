@@ -128,10 +128,24 @@ tuple_failure_test() ->
 
 list_shrink_test() ->
     %% test that a list shrinks to the empty list
-    [[]] = triq:counterexample(
-	     ?FORALL(_, list(int()), false)
-	    ).
+    true = lists:all(fun(_)->
+			     [[]] == triq:counterexample(
+				       ?FORALL(_, list(int()), false)
+				      )
+		     end, lists:seq(1,100)).
 
+list_shrink2_test() ->
+    %% test that a list doesn't easily end in a local 'smallest counterexample'
+    true = lists:all(fun(_)->
+			     [[]] == triq:counterexample(
+				       ?FORALL(L, list(oneof([a,b])),
+					       not is_pairs_list(L))
+				      )
+		     end, lists:seq(1,100)).
+
+is_pairs_list([])      -> true;
+is_pairs_list([X,X|T]) -> is_pairs_list(T);
+is_pairs_list(_)       -> false.
 
 oneof_test() ->
     [{X,Y}] = triq:counterexample(
