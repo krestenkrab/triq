@@ -654,9 +654,9 @@ atom_pick(#?DOM{kind=#atom{size=Size}, empty_ok=EmptyOK}=AtomDom, SampleSize) ->
 	     any ->
 		 case EmptyOK of
 		     true ->
-			 random:uniform(min(SampleSize,256))-1;
+			 random:uniform(xmin(SampleSize,256))-1;
 		     false ->
-			 random:uniform(min(SampleSize,256))
+			 random:uniform(xmin(SampleSize,256))
 		 end;
 	     Size -> 
 		 Size
@@ -667,9 +667,9 @@ atom_pick(#?DOM{kind=#atom{size=Size}, empty_ok=EmptyOK}=AtomDom, SampleSize) ->
     AtomValue = list_to_atom(foldn(Fun, [], Sz)),
     {AtomDom, AtomValue}.
 
-min(A,B) when A<B -> A;
-min(A,B) when B<A -> B;
-min(A,B) when A==B -> A.
+xmin(A,B) when A<B -> A;
+xmin(A,B) when B<A -> B;
+xmin(A,B) when A==B -> A.
 
 
 atom_shrink(#?DOM{kind=#atom{size=Size}, empty_ok=EmptyOK}=AtomDom, AtomValue) ->
