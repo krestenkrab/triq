@@ -831,7 +831,7 @@ bindshrink(Dom,Fun) when is_function(Fun,1) ->
     domain(letshrink,
 	   fun(_,SampleSize) ->
 		   Box1 = {_,List1} = pick(Dom, SampleSize),
-		   ?assert(is_list(List1) and length(List1)>0 ),
+		   ?assert(is_list(List1) and (length(List1)>0) ),
 		   Box2 = {_,List2} = pick(Fun(List1), SampleSize),
 		   
 		   { bindshrink2(Box1,Box1,Box2,Fun,SampleSize), List2 }
