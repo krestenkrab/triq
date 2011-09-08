@@ -827,6 +827,8 @@ bound_shrink(#?DOM{kind=#bound_domain{dom1=Dom1,val1=Val1,dom2=Dom2,fun2=Fun,siz
 
 %% @doc support function for `?LETSHRINK([X,...],[domain(),...],domain())'
 %% @private
+bindshrink(Dom,_Fun) when not is_list(Dom) ->
+    error(argument_to_LETSHRINK_macro_must_be_lists);
 bindshrink(Dom,Fun) when is_function(Fun,1) ->
     domain(letshrink,
 	   fun(_,SampleSize) ->
@@ -1244,7 +1246,7 @@ eval(PropList, Tuple) when is_tuple(Tuple) ->
 	    A = eval(PropList, Args),
 	    erlang:apply(M,F,A);
 
-	[var, Name] when is_atom(Name) ->
+	[var, Name] when is_integer(Name) ->
 	    case proplists:lookup(Name, PropList) of
 		none -> {var, Name};
 		{Name, Value} -> Value

@@ -130,7 +130,7 @@ run_commands(Module,Commands,Env) ->
 do_run_command(Commands, Env, Module, History, State) ->
     case Commands of
 	[] -> 
-	    {History, State, ok};
+	    {History, eval(Env,State), ok};
 
 	[{init,S}|Rest] ->
 	    State2 = eval(Env, S),
@@ -153,7 +153,7 @@ do_run_command(Commands, Env, Module, History, State) ->
 		    do_run_command(Rest, Env2, Module, History2, State2);
 			   
 		Other ->
-		    {History, State, {postcondition, Other}}
+		    {History, eval(Env,State), {postcondition, Other}}
 	    end
     end.
 
