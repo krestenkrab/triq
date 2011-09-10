@@ -72,6 +72,9 @@
 %% @type domain(T). Domain of values of type T.
 %% 
 -type domain(T) :: domrec(T) |  T.
+
+%% @type Valid unicode code point.
+-type uchar() :: 0..16#D7FF | 16#E000..16#10FFFF.
 		     
 -record(?DOM,
 	{kind :: atom() | tuple(),
@@ -95,10 +98,13 @@
 -record(choose,{min,max}).
 -record(elements,{elems,size,picked=none}).
 -record(seal,{dom,seed}).
+-record(unicode_binary, {size}).
+
 
 %% generators
 -export([list/1, tuple/1, int/0, real/0, sized/1, elements/1, any/0, atom/0, atom/1, choose/2,
-	 oneof/1, frequency/1, bool/0, char/0, return/1, vector/2, binary/1, binary/0, non_empty/1, resize/2]).
+	 oneof/1, frequency/1, bool/0, char/0, return/1, vector/2, binary/1, binary/0, non_empty/1, resize/2,
+	 unicode_char/0, unicode_binary/1, unicode_binary/0]).
 
 %% using a generator
 -export([bind/2, bindshrink/2, suchthat/2, pick/2, shrink/2, sample/1, sampleshrink/1, 
@@ -1229,3 +1235,85 @@ repeat(_,0) ->
 repeat(Fun,N) ->
     Fun(),
     repeat(Fun,N-1).
+
+
+%% Code points in the range U+D800..U+DBFF (1,024 code points) are known as 
+%% high-surrogate code points, and code points in the range U+DC00..U+DFFF 
+%% (1,024 code points) are known as low-surrogate code points. 
+%% A high-surrogate code point (also known as a leading surrogate) followed 
+%% by a low-surrogate code point (also known as a trailing surrogate) 
+%% together form a surrogate pair used in UTF-16 to represent 1,048,576 
+%% code points outside BMP. 
+%% High and low surrogate code points are not valid by themselves. Thus the 
+%% range of code points that are available for use as characters is 
+%% U+0000..U+D7FF and U+E000..U+10FFFF (1,112,064 code points). 
+%% The value of these code points (i.e. excluding surrogates) is sometimes 
+%% referred to as the character's scalar value.
+-spec unicode_char() -> domrec(uchar()).
+unicode_char() ->
+    P = fun(Dom,_) ->
+            {Dom, random_unicode_char()}
+        end,
+    S = fun(Dom,V) when V =< 0 ->
+            {Dom, V};
+		   % skip surrogates.
+           (Dom,N) when N >= 16#DFFF andalso N =< 16#E002 ->
+            {Dom, 16#D799};
+           (Dom,N) ->
+            {Dom, N - random:uniform(3)}
+        end,
+    #?DOM{
+      kind=unicode_char,
+      pick=P,
+      shrink=S}.
+
+-spec random_unicode_char() -> uchar().
+random_unicode_char() ->
+	case (random:uniform(16#10FFFF + 1) - 1) of
+	C when C >= 16#D800 andalso C =< 16#DFFF ->
+		% surrogates
+		random_unicode_char();
+	C -> C
+	end.
+
+
+-spec unicode_binary() -> domrec(binary()).
+unicode_binary() ->
+    foldn(fun(T) -> [random_unicode_char() | T] end,
+        [], 2),
+    #?DOM{kind=#unicode_binary{size=any},
+        pick=fun unicode_binary_pick/2,
+        shrink=fun unicode_binary_shrink/2}.
+
+-spec unicode_binary(Size::non_neg_integer()) -> domrec(binary()).    
+unicode_binary(Size) ->
+    #?DOM{kind=#unicode_binary{size=Size},
+        pick=fun unicode_binary_pick/2,
+        shrink=fun unicode_binary_shrink/2}.
+
+unicode_binary_pick(#?DOM{kind=#unicode_binary{size=Size}, empty_ok=EmptyOK}=BinDom, SampleSize) ->
+    Sz = case Size of
+        any ->
+            case EmptyOK of
+            true ->
+                random:uniform(SampleSize)-1;
+            false ->
+                random:uniform(SampleSize)
+            end;
+        Size ->
+            Size
+        end,
+    BinValue = unicode:characters_to_binary(foldn(fun(T) -> [random_unicode_char() | T] end,
+        [], Sz), unicode),
+    {BinDom, BinValue}.
+
+unicode_binary_shrink(#?DOM{kind=#unicode_binary{size=Size}, empty_ok=EmptyOK}=BinDom, BinValue) ->
+    List = unicode:characters_to_list_int(BinValue, utf8),
+    Length = string:len(List),
+    AllowSmaller = allow_smaller(Length,Size,EmptyOK),
+    case shrink_list_with_elemdom(unicode_char(), List, Length, AllowSmaller) of
+        List -> {BinDom, BinValue};
+        NewList -> 
+		NewBin = unicode:characters_to_binary(NewList, unicode),
+		{BinDom, NewBin}
+    end.
