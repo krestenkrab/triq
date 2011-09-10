@@ -1308,18 +1308,25 @@ repeat(Fun,N) ->
 %% The value of these code points (i.e. excluding surrogates) is sometimes 
 %% referred to as the character's scalar value.
 -spec unicode_char() -> domrec(uchar()).
+-define(UNICODE_CHAR_SHRINK_STEP, 3).
 unicode_char() ->
     P = fun(Dom,_) ->
             {Dom, random_unicode_char()}
         end,
-    S = fun(Dom,V) when V =< 0 ->
-            {Dom, V};
-		   % skip surrogates.
-           (Dom,N) when N >= 16#DFFF andalso N =< 16#E002 ->
-            {Dom, 16#D799};
-           (Dom,N) ->
-            {Dom, N - random:uniform(3)}
+    S = fun(Dom,V) ->
+		NewV = case (V - random:uniform(?UNICODE_CHAR_SHRINK_STEP)) of
+			X when X < 0 -> V;
+            X when X >= 16#D800, X =< 16#DFFF -> 
+		   		% skip surrogates.
+				16#D799;
+           	X when X =:= 16#FFFF; X =:= 16#FFFE ->
+            	16#FFFD;
+           	X -> X
+			end,
+
+		{Dom, NewV}
         end,
+
     #?DOM{
       kind=unicode_char,
       pick=P,
@@ -1330,6 +1337,10 @@ random_unicode_char() ->
 	case (random:uniform(16#10FFFF + 1) - 1) of
 	C when C >= 16#D800 andalso C =< 16#DFFF ->
 		% surrogates
+		random_unicode_char();
+	16#FFFF ->
+		random_unicode_char();
+	16#FFFE ->
 		random_unicode_char();
 	C -> C
 	end.
