@@ -123,12 +123,11 @@ run_commands(Module,Commands) ->
     run_commands(Module,Commands,[]).
 
 run_commands(Module,Commands,Env) ->
-
     do_run_command(Commands,
 		   Env,
 		   Module,
 		   [],
-		   eval(Env,Module:initial_state())).
+		   Module:initial_state()).
 
 do_run_command(Commands, Env, Module, History, State) ->
     case Commands of
@@ -136,25 +135,24 @@ do_run_command(Commands, Env, Module, History, State) ->
 	    {History, eval(Env,State), ok};
 
 	[{init,S}|Rest] ->
-	    State2 = eval(Env, S),
-	    do_run_command(Rest, Env, Module, History, State2);
+	    do_run_command(Rest, Env, Module, History, S);
 	
-	[{set, {var,V}=Var, {call,M,F,A}}|Rest] ->
+	[{set, {var,V}=Var, {call,M,F,A}=SymCall}|Rest] ->
 	    M2=eval(Env,M), 
 	    F2=eval(Env,F), 
 	    A2=eval(Env,A),
 	    
-	    Res = apply(M2,F2,A2),
+	    Res = apply(M2,F2,A2), % Same as eval(Env, SymCall), but we need to log in History.
 
-	    Call = {call, M2,F2,A2},
-	    History2 = [{Call,Res}|History],
+	    SubstCall = {call, M2,F2,A2},
+	    History2 = [{SubstCall,Res}|History],
     
-	    case Module:postcondition(State,Call,Res) of
+	    case Module:postcondition(State,SubstCall,Res) of
 		true ->
 		    Env2 = [{V,Res}|proplists:delete(V,Env)],
-		    State2 = Module:next_state(State,Var,Call),
+		    State2 = Module:next_state(State,Var,SymCall),
 		    do_run_command(Rest, Env2, Module, History2, State2);
-			   
+
 		Other ->
 		    {History, eval(Env,State), {postcondition, Other}}
 	    end
