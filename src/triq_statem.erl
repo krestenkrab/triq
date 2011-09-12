@@ -4,7 +4,8 @@
 -define(FORALL(X,Gen,Property),
 	{'prop:forall', Gen, ??X, fun(X)-> begin Property end end, ??Property}).
 
--import(triq_dom, [eval/2, pick/2, domain/3]).
+-import(triq_dom, [pick/2, domain/3]).
+-import(triq_expr, [eval/2, free_vars/1]).
 -export([commands/1, run_commands/2, run_commands/3, state_after/2, prop_statem/1]).
 
 
@@ -101,20 +102,22 @@ commands_shrink(Module,SymbolicStates,Domains, Dom, Commands,Tries) ->
 %%
 %% validate a shrunken command sequence
 %%
-validate(_Mod,_State,_States,[]) -> true;
+validate(Mod, State, _States, Commands) ->
+    validate2(Mod, State, Commands, []).
 
-validate(Module,_State,[_|States],[{init,S}|Commands]) ->
-    validate(Module,S,States,Commands);
-
-validate(Module,State,[_|States],[{set,Var,Call}|Commands]) ->
-    case Module:precondition(State,Call) of
-	true ->
-	    case Module:next_state(State, Var, Call) of
-		NextState -> 
-		    validate(Module,NextState, States, Commands)
-	    end;
-	_ -> false
-    end.
+validate2(_Mod,_State,[], _KnownVars) ->
+    true;
+validate2(Module,_State,[{init,S}|Commands], _KnownVars) ->
+    validate2(Module,S,Commands, []);
+validate2(Module,State,[{set,Var,Call}|Commands], KnownVars) ->
+    FreeVars = free_vars(Call),
+    UnknownVars = FreeVars -- KnownVars,
+    (UnknownVars == [])
+	andalso (Module:precondition(State,Call)==true)
+	andalso begin
+		    NextState = Module:next_state(State, Var, Call),
+		    validate2(Module,NextState, Commands, [Var|KnownVars])
+		end.
 
 run_commands(Module,Commands) ->
     run_commands(Module,Commands,[]).
@@ -209,11 +212,3 @@ without(RemIdx,List) when is_list(List) ->
 
 without(RemIdx,Tup) when is_tuple(Tup) ->
     list_to_tuple(without(RemIdx, tuple_to_list(Tup))).
-
-
-    
-    
-
-
-
-
