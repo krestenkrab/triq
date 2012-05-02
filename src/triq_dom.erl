@@ -70,12 +70,12 @@
 
 
 %% @type domain(T). Domain of values of type T.
-%% 
+%%
 -type domain(T) :: domrec(T) |  T.
 
-%% @type Valid unicode code point.
+%% @type uchar(). Valid unicode code point.
 -type uchar() :: 0..16#D7FF | 16#E000..16#10FFFF.
-		     
+
 -record(?DOM,
 	{kind :: atom() | tuple(),
 	 pick   =fun error_pick/2    :: pick_fun(T),
