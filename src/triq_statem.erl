@@ -6,7 +6,7 @@
 
 -import(triq_dom, [pick/2, domain/3]).
 -import(triq_expr, [eval/2, free_vars/1]).
--export([commands/1, run_commands/2, run_commands/3, state_after/2, prop_statem/1]).
+-export([commands/1, commands/2, run_commands/2, run_commands/3, state_after/2, prop_statem/1, command_names/1, zip/2]).
 
 
 commands(Module) ->
@@ -14,6 +14,16 @@ commands(Module) ->
 	   fun(_,Size) ->
 		   gen_commands(Module,
 				Module:initial_state(),
+				[],[],[],
+				Size, Size, ?TRIES)
+	   end,
+	   undefined).
+
+commands(Module, InitialState) ->
+    domain(commands, 
+	   fun(_,Size) ->
+		   gen_commands(Module,
+				InitialState,
 				[],[],[],
 				Size, Size, ?TRIES)
 	   end,
@@ -27,6 +37,9 @@ gen_commands(Module,_,SymbolicStates,CallDoms,Commands,_,0,_) ->
 
 gen_commands(Module,State,_,_,_,_,_,0) ->
     erlang:error({cannot_generate,Module,State});
+
+gen_commands(Module,State,States,Domains,[],Size,Count,Tries) ->
+    gen_commands(Module,State,States,Domains,[{init,State}],Size,Count,Tries);
 
 gen_commands(Module,State,States,Domains,Commands,Size,Count,Tries) ->
     
@@ -210,3 +223,17 @@ without(RemIdx,List) when is_list(List) ->
 
 without(RemIdx,Tup) when is_tuple(Tup) ->
     list_to_tuple(without(RemIdx, tuple_to_list(Tup))).
+
+%%
+%% simplify command names
+%%
+command_names(Calls) ->
+    [{M,F,length(Args)} || {call, M, F, Args} <- Calls].
+
+zip(X, Y) ->
+    zip(X, Y, []).
+
+zip([], _, Acc) -> lists:reverse(Acc);
+zip(_, [], Acc) -> lists:reverse(Acc);
+zip([A|T1], [B|T2], Acc) ->
+    zip(T1, T2, [{A,B}|Acc]).
