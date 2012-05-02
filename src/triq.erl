@@ -30,7 +30,7 @@
 -define(TEST_COUNT, 100).
 
 -export([check/1, check/2, check/3, fails/1, module/1,  
-	 counterexample/0, counterexample/1]).
+	 counterexample/0, counterexample/1, numtests/2]).
 
 -import(triq_dom, [pick/2, shrink/2]).
 
@@ -101,7 +101,10 @@ check_input(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 	
 	{'prop:implies', true, _Syntax, Fun2, Body2} ->
 	    check_input(fun(none)->Fun2()end,none,none,QCT#triq{body=Body2});
-	
+
+	{'prop:numtests', Iters, Property} ->
+            check_input(fun(none)->Property end,none,none,QCT#triq{ run_iter=Iters });
+
 	{'prop:whenfail', Action, Fun2, Body2} ->
 	    case check_input(fun(none)->Fun2()end,none,none,QCT#triq{body=Body2}) of
 		{success, _}=Success ->
@@ -441,4 +444,8 @@ shrink_loop(Fun,Input,InputDom,GS,Context,Tested) ->
 %%--------------------------------------------------------------------
 fails(Prop) ->
     {'prop:fails', Prop}.
+
+
+numtests(Num,Prop) ->
+    {'prop:numtests', Num, Prop}.
 
