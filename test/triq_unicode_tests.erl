@@ -8,7 +8,8 @@
 -include_lib("triq/include/triq.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
-equals(X, Y) -> X =:= Y.
+equals(X, X) -> true;
+equals(X, Y) -> io:format(user, "Are not equal ~p and ~p.", [X,Y]), false.
 
 
 %% ------------------------------------------------------------------
@@ -75,4 +76,4 @@ run_property_testing_case() ->
     erlang:group_leader(whereis(user), self()),
     Res = triq:module(?MODULE),
     erlang:group_leader(EunitLeader, self()),
-    ?assertEqual([], Res). 
+    ?assert(Res). 

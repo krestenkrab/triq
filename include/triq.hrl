@@ -58,7 +58,7 @@
 %%
 %% import domain functions (a.k.a. generators)
 %%
--import(?DOMAIN_MODULE, [list/1, tuple/1, int/0, byte/0, real/0, elements/1, any/0, atom/0, 
+-import(?DOMAIN_MODULE, [list/1, tuple/1, int/0, int/1, int/2, byte/0, real/0, elements/1, any/0, atom/0, 
                          choose/2, bool/0, char/0, oneof/1, return/1, vector/2, binary/0, binary/1,
                          unicode_char/0, unicode_string/0, unicode_string/1, unicode_binary/0, 
                          unicode_binary/1, unicode_binary/2, unicode_characters/0, unicode_characters/1,
