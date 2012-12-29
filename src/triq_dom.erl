@@ -104,7 +104,7 @@
 
 
 %% generators
--export([list/1, tuple/1, int/0, real/0, sized/1, elements/1, any/0, atom/0, atom/1, choose/2,
+-export([list/1, tuple/1, int/0, byte/0, real/0, sized/1, elements/1, any/0, atom/0, atom/1, choose/2,
 	 oneof/1, frequency/1, bool/0, char/0, return/1, vector/2, binary/1, binary/0, non_empty/1, resize/2]).
 
 -export([unicode_char/0,
@@ -556,6 +556,7 @@ tuple_shrink(#?DOM{kind={shrinkable_tuple, TupleDom}, empty_ok=EmptyOK}, Tuple) 
 
 %% @doc The domain of integers.
 %% @spec int() -> domain(integer())
+%% TODO: sized int().
 -spec int() -> domrec(integer()).
 int() ->
     #?DOM{kind=int,
@@ -567,6 +568,11 @@ int() ->
 		      {Dom, random:uniform(SampleSize) - (SampleSize div 2)}
 	      end
 	}.
+
+%% TODO: write me.
+-spec byte() -> domrec(integer()).
+byte() ->
+    int().
 
 %% @doc The domain of floats.
 %% @spec real() -> domain(float())
@@ -1315,7 +1321,7 @@ unicode_string(Size) ->
 
 -spec unicode_binary() -> domrec(binary()).
 unicode_binary() ->
-    unicode_binary(any, undefined).
+    unicode_binary(any, utf8).
 
 
 %% @doc Generate an unicode binary binary.
@@ -1324,7 +1330,7 @@ unicode_binary() ->
     Encoding :: unicode:encoding().
 
 unicode_binary(Size) when is_integer(Size) ->
-    unicode_binary(Size, undefined);
+    unicode_binary(Size, utf8);
 
 unicode_binary(Encoding) ->
     unicode_binary(any, Encoding).
