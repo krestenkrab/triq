@@ -4,8 +4,9 @@
 -define(FORALL(X,Gen,Property),
 	{'prop:forall', Gen, ??X, fun(X)-> begin Property end end, ??Property}).
 
--import(triq_dom, [eval/2, pick/2, domain/3]).
--export([commands/1, run_commands/2, run_commands/3, state_after/2, prop_statem/1]).
+-import(triq_dom, [pick/2, domain/3]).
+-import(triq_expr, [eval/2, free_vars/1]).
+-export([commands/1, commands/2, run_commands/2, run_commands/3, state_after/2, prop_statem/1, command_names/1, zip/2]).
 
 
 commands(Module) ->
@@ -13,6 +14,16 @@ commands(Module) ->
 	   fun(_,Size) ->
 		   gen_commands(Module,
 				Module:initial_state(),
+				[],[],[],
+				Size, Size, ?TRIES)
+	   end,
+	   undefined).
+
+commands(Module, InitialState) ->
+    domain(commands, 
+	   fun(_,Size) ->
+		   gen_commands(Module,
+				InitialState,
 				[],[],[],
 				Size, Size, ?TRIES)
 	   end,
@@ -26,6 +37,9 @@ gen_commands(Module,_,SymbolicStates,CallDoms,Commands,_,0,_) ->
 
 gen_commands(Module,State,_,_,_,_,_,0) ->
     erlang:error({cannot_generate,Module,State});
+
+gen_commands(Module,State,States,Domains,[],Size,Count,Tries) ->
+    gen_commands(Module,State,States,Domains,[{init,State}],Size,Count,Tries);
 
 gen_commands(Module,State,States,Domains,Commands,Size,Count,Tries) ->
     
@@ -101,31 +115,32 @@ commands_shrink(Module,SymbolicStates,Domains, Dom, Commands,Tries) ->
 %%
 %% validate a shrunken command sequence
 %%
-validate(_Mod,_State,_States,[]) -> true;
+validate(Mod, State, _States, Commands) ->
+    validate2(Mod, State, Commands, []).
 
-validate(Module,_State,[_|States],[{init,S}|Commands]) ->
-    validate(Module,S,States,Commands);
-
-validate(Module,State,[_|States],[{set,Var,Call}|Commands]) ->
-    case Module:precondition(State,Call) of
-	true ->
-	    case Module:next_state(State, Var, Call) of
-		NextState -> 
-		    validate(Module,NextState, States, Commands)
-	    end;
-	_ -> false
-    end.
+validate2(_Mod,_State,[], _KnownVars) ->
+    true;
+validate2(Module,_State,[{init,S}|Commands], _KnownVars) ->
+    validate2(Module,S,Commands, []);
+validate2(Module,State,[{set,Var,Call}|Commands], KnownVars) ->
+    FreeVars = free_vars(Call),
+    UnknownVars = FreeVars -- KnownVars,
+    (UnknownVars == [])
+	andalso (Module:precondition(State,Call)==true)
+	andalso begin
+		    NextState = Module:next_state(State, Var, Call),
+		    validate2(Module,NextState, Commands, [Var|KnownVars])
+		end.
 
 run_commands(Module,Commands) ->
     run_commands(Module,Commands,[]).
 
 run_commands(Module,Commands,Env) ->
-
     do_run_command(Commands,
 		   Env,
 		   Module,
 		   [],
-		   eval(Env,Module:initial_state())).
+		   Module:initial_state()).
 
 do_run_command(Commands, Env, Module, History, State) ->
     case Commands of
@@ -133,25 +148,24 @@ do_run_command(Commands, Env, Module, History, State) ->
 	    {History, eval(Env,State), ok};
 
 	[{init,S}|Rest] ->
-	    State2 = eval(Env, S),
-	    do_run_command(Rest, Env, Module, History, State2);
+	    do_run_command(Rest, Env, Module, History, S);
 	
-	[{set, {var,V}=Var, {call,M,F,A}}|Rest] ->
+	[{set, {var,V}=Var, {call,M,F,A}=SymCall}|Rest] ->
 	    M2=eval(Env,M), 
 	    F2=eval(Env,F), 
 	    A2=eval(Env,A),
 	    
-	    Res = apply(M2,F2,A2),
+	    Res = apply(M2,F2,A2), % Same as eval(Env, SymCall), but we need to log in History.
 
-	    Call = {call, M2,F2,A2},
-	    History2 = [{Call,Res}|History],
+	    SubstCall = {call, M2,F2,A2},
+	    History2 = [{SubstCall,Res}|History],
     
-	    case Module:postcondition(State,Call,Res) of
+	    case Module:postcondition(State,SubstCall,Res) of
 		true ->
 		    Env2 = [{V,Res}|proplists:delete(V,Env)],
-		    State2 = Module:next_state(State,Var,Call),
+		    State2 = Module:next_state(State,Var,SymCall),
 		    do_run_command(Rest, Env2, Module, History2, State2);
-			   
+
 		Other ->
 		    {History, eval(Env,State), {postcondition, Other}}
 	    end
@@ -210,10 +224,16 @@ without(RemIdx,List) when is_list(List) ->
 without(RemIdx,Tup) when is_tuple(Tup) ->
     list_to_tuple(without(RemIdx, tuple_to_list(Tup))).
 
+%%
+%% simplify command names
+%%
+command_names(Calls) ->
+    [{M,F,length(Args)} || {call, M, F, Args} <- Calls].
 
-    
-    
+zip(X, Y) ->
+    zip(X, Y, []).
 
-
-
-
+zip([], _, Acc) -> lists:reverse(Acc);
+zip(_, [], Acc) -> lists:reverse(Acc);
+zip([A|T1], [B|T2], Acc) ->
+    zip(T1, T2, [{A,B}|Acc]).
