@@ -62,7 +62,8 @@
                          choose/2, bool/0, char/0, oneof/1, return/1, vector/2, binary/0, binary/1,
 			 unicode_binary/0, unicode_binary/1, unicode_char/0,
 			 non_empty/1,
-                         shrink_without_duplicates/1, resize/2, frequency/1]).
+                         shrink_without_duplicates/1, resize/2, frequency/1,
+			 pos_integer/0, non_neg_integer/0]).
 
 
 %%
