@@ -19,7 +19,7 @@ equals(X, Y) -> io:format(user, "Are not equal ~p and ~p.", [X,Y]), false.
 prop_unicode_char() ->
     ?FORALL(Char, unicode_char(),
         begin
-%           io:format(user, "~p~n", [Char]),
+%%          io:format(user, "~p~n", [Char]),
             true
         end).
 

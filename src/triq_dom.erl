@@ -263,16 +263,16 @@ shrink(TupDom,Tup) when is_tuple(TupDom),
                         is_tuple(Tup),
                         tuple_size(TupDom) =:= tuple_size(Tup) ->
     shrink_tuple_samesize(TupDom, Tup, 10);
-%
-% well-formed lists are shrunk using this case.
-% the "length(X)>=0 tests if it is well-formed list"
-%
+%%
+%% well-formed lists are shrunk using this case.
+%% the "length(X)>=0 tests if it is well-formed list"
+%%
 shrink(ListDom, List) when is_list(ListDom), is_list(List), length(List) >= 0 ->
     ?assert(length(ListDom) == length(List)),
     shrink_list_samesize(ListDom, List, length(List), 10);
-%
-% other non-well-formed lists [cons pairs] use this clause
-%
+%%
+%% other non-well-formed lists [cons pairs] use this clause
+%%
 shrink([_|_]=ListDom, [_|_]=List) ->
     shrink_pair(ListDom,List, 10);
 %% finally, if the generator is the value itself, it simplifies to itself
@@ -287,12 +287,11 @@ shrink(Any,Any) -> {Any,Any}.
 shrink_pair(ListDom,List,0) ->
     {ListDom,List};
 shrink_pair([HDom|TDom]=ListDom, [H|T]=List, NAttempts) ->
-    % choose if we shrink the head or the tail
+    %% choose if we shrink the head or the tail
     ShrinkHead = (random:uniform(2) =:= 1),
     ShrinkTail = (random:uniform(2) =:= 1),
 
     %% then do it
-    %
     case
 
 	%% shrink head and/or tail
@@ -345,11 +344,11 @@ shrink_list_samesize(ListDom,List,Length,NAttempts) when is_list(List) ->
     HowManyToShrink = shrink_members(Length),
     case shrink_list_members(ListDom, List, Length, HowManyToShrink) of
 
-	% it did not shrink, try again
+	%% it did not shrink, try again
 	{_,List} ->
 	    shrink_list_samesize(ListDom, List, Length, NAttempts-1);
 
-	% else, we got a simpler list
+	%% else, we got a simpler list
 	{_,_}=Result ->
 	    Result
     end.
@@ -857,17 +856,17 @@ bound_domain(Dom1,Val1,Dom2,Fun,SampleSize) ->
 
 bound_shrink(#?DOM{kind=#bound_domain{dom1=Dom1,val1=Val1,dom2=Dom2,fun2=Fun,size=SampleSize}}, Val2) ->
     case shrink(Dom1,Val1) of
-	% it did not shrink val1
+	%% it did not shrink val1
 	{_,Val1} ->
-	    % try to shrink the secondary domain
+	    %% try to shrink the secondary domain
 	    shrink(Dom2,Val2);
 
-	% Val1 did shrink!
+	%% Val1 did shrink!
 	{SDom1,SVal1} ->
-	    % pick a new value from the secondary domain
+	    %% pick a new value from the secondary domain
 	    {SDom2,SVal2} = pick( Fun(SVal1), SampleSize),
 
-	    % and return the new bound domain
+	    %% and return the new bound domain
 	    { bound_domain(SDom1,SVal1,SDom2,Fun, SampleSize), SVal2 }
     end.
 
@@ -1285,7 +1284,7 @@ unicode_char() ->
 		NewV = case (V - random:uniform(?UNICODE_CHAR_SHRINK_STEP)) of
 			X when X < 0 -> V;
             X when X >= 16#D800, X =< 16#DFFF ->
-		   		% skip surrogates.
+			        %% skip surrogates.
 				16#D799;
            	X when X =:= 16#FFFF; X =:= 16#FFFE ->
             	16#FFFD;
@@ -1304,7 +1303,7 @@ unicode_char() ->
 random_unicode_char() ->
 	case (random:uniform(16#10FFFF + 1) - 1) of
 	C when C >= 16#D800 andalso C =< 16#DFFF ->
-		% surrogates
+		%% surrogates
 		random_unicode_char();
 	16#FFFF ->
 		random_unicode_char();

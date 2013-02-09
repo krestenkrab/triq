@@ -23,10 +23,10 @@
 
 -module(triq_tests).
 
-% including this also auto-exports all properties
+%% including this also auto-exports all properties
 -include("triq.hrl").
 
-% use eunit
+%% use eunit
 -include_lib("eunit/include/eunit.hrl").
 
 %% eunit test; we need a longer timeout because some of it is rather slow...
@@ -152,7 +152,7 @@ oneof_test() ->
 				 oneof([int(),real()])},
 				A < B),
 		      begin
-%			  io:format("{X,Y} = ~p~n", [{X,Y}]),
+			  %% io:format("{X,Y} = ~p~n", [{X,Y}]),
 			  is_integer(X) == is_integer(Y)
 		      end
 			 )),
