@@ -13,7 +13,7 @@ Triq - Trifork QuickCheck
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-  
+
 
 This product includes software covered by the following licenses:
 
@@ -22,15 +22,4 @@ This product includes software covered by the following licenses:
 
    auto-exporter parse transformation (src/triq_autoexport.erl) is
    derived from code by Richard Carlsson licensed under the
-   GNU Lesser General Public License.  
-
-   
-
-   
-
-
-
-
-
-
-
+   GNU Lesser General Public License.

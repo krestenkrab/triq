@@ -6,7 +6,7 @@
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
 %% You may obtain a copy of the License at
-%%  
+%%
 %%     http://www.apache.org/licenses/LICENSE-2.0
 %%
 %% Unless required by applicable law or agreed to in writing, software
@@ -31,8 +31,8 @@
 
 %% eunit test; we need a longer timeout because some of it is rather slow...
 triq_test_() ->
-    {timeout, 60, 
-     fun() -> 
+    {timeout, 60,
+     fun() ->
 	     true = triq:module(?MODULE)
      end}.
 
@@ -47,12 +47,12 @@ prop_append() ->
 		 lists:reverse(Ys) ++ lists:reverse(Xs))).
 
 xprop_delete() ->
-     ?FORALL(L,list(int()), 
+     ?FORALL(L,list(int()),
 	?IMPLIES(L /= [],
-	    ?FORALL(I,elements(L), 
+	    ?FORALL(I,elements(L),
 		?WHENFAIL(io:format("L=~p, I=~p~n", [L,I]),
 		    not lists:member(I,lists:delete(I,L)))))).
-					 
+
 delete_test() ->
     false = triq:check(xprop_delete()).
 
@@ -66,14 +66,13 @@ inverse('/=') -> '=='.
 
 prop_binop() ->
     ?FORALL({A,B,OP}, {any(),any(),elements(['>','<','==','=:=','=/=','/='])},
-	    erlang:OP(A,B) 
+	    erlang:OP(A,B)
 	    ==
-	    begin 
+	    begin
 		ROP = inverse(OP),
 		not  ( erlang:ROP(A,B) )
 	    end
 	   ).
-
 
 prop_timeout() ->
  fails(
@@ -82,7 +81,6 @@ prop_timeout() ->
        timer:sleep(N) == ok))
 )
 .
-
 prop_sized() ->
     ?FORALL(T, ?SIZED(S, {true, choose(0,S)}),
 	    (erlang:tuple_size(T) == 2)
@@ -91,29 +89,28 @@ prop_sized() ->
 	   ).
 
 prop_simple1() ->
-    ?FORALL(V, [1,int(),3|4], 
+    ?FORALL(V, [1,int(),3|4],
 	    begin [1,X,3|4]=V, is_integer(X) end ).
 
 prop_simple2() ->
     ?FORALL(V, {}, V == {}).
 
 prop_simple3() ->
-    ?FORALL(V, atom(), 
+    ?FORALL(V, atom(),
 	    ?IMPLIES(V /= '',
 		     begin
 			 [CH|_] = erlang:atom_to_list(V),
 			 (CH >= $a) and (CH =< $z)
 		     end)).
 
-
 %%
 %% This should be able to succeed
 %%
 prop_suchthat() ->
-    ?FORALL({X,Y}, 
-	    ?SUCHTHAT({XX,YY}, 
-		      {int(),int()}, 
-		      XX < YY), 
+    ?FORALL({X,Y},
+	    ?SUCHTHAT({XX,YY},
+		      {int(),int()},
+		      XX < YY),
 	    X < Y).
 
 suchthat_test() ->
@@ -149,7 +146,7 @@ is_pairs_list(_)       -> false.
 
 oneof_test() ->
     [{X,Y}] = triq:counterexample(
-	      ?FORALL({X,Y}, 
+	      ?FORALL({X,Y},
 		      ?SUCHTHAT({A,B},
 				{oneof([int(),real()]),
 				 oneof([int(),real()])},
@@ -163,11 +160,11 @@ oneof_test() ->
     ?assert((X == 0) and (Y == 0)).
 
 %%
-%% This test makes sure that X shrinks only to 3. 
+%% This test makes sure that X shrinks only to 3.
 %%
 oneof2_test() ->
     [X] = triq:counterexample
-	    (?FORALL(_, 
+	    (?FORALL(_,
 		     oneof([choose(3,7)]),
 		     false)),
     3 = X.
@@ -181,7 +178,7 @@ vector_test() ->
 		     false)),
     [3,3,3,3] = L.
 
-    
+
 %%
 %% Test binary shrinking
 %%
@@ -204,7 +201,7 @@ binary2_test() ->
 %%
 elements_test() ->
     [X] = triq:counterexample
-	    (?FORALL(_, 
+	    (?FORALL(_,
 		     elements([one,two,three]),
 		     false)),
     one = X.
