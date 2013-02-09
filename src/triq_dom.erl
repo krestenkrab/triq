@@ -1236,7 +1236,7 @@ domain(Name,PickFun,ShrinkFun) ->
 
 
 %%
-%% Utility funcitons
+%% Utility functions
 %%
 
 foldn(_,Acc,0) -> Acc;
