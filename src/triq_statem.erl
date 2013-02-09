@@ -4,9 +4,20 @@
 -define(FORALL(X,Gen,Property),
 	{'prop:forall', Gen, ??X, fun(X)-> begin Property end end, ??Property}).
 
--import(triq_dom, [pick/2, domain/3]).
--import(triq_expr, [eval/2, free_vars/1]).
--export([commands/1, commands/2, run_commands/2, run_commands/3, state_after/2, prop_statem/1, command_names/1, zip/2]).
+-import(triq_dom,
+	[pick/2,
+	 domain/3]).
+-import(triq_expr,
+	[eval/2,
+	 free_vars/1]).
+-export([commands/1,
+	 commands/2,
+	 run_commands/2,
+	 run_commands/3,
+	 state_after/2,
+	 prop_statem/1,
+	 command_names/1,
+	 zip/2]).
 
 
 commands(Module) ->

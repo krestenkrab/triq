@@ -17,9 +17,16 @@
 %%
 -module(triq_fsm).
 
--export([commands/1, commands/2, run_commands/2, run_commands/3, state_names/1]).
--import(triq_expr, [eval/2, free_vars/1]).
--import(triq_dom, [oneof/1]).
+-export([commands/1,
+	 commands/2,
+	 run_commands/2,
+	 run_commands/3,
+	 state_names/1]).
+-import(triq_expr,
+	[eval/2,
+	 free_vars/1]).
+-import(triq_dom,
+	[oneof/1]).
 
 
 %% FSM API

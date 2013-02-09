@@ -17,10 +17,13 @@
 %%
 -module(triq_fsm_stub, [Module]).
 
--export([command/1, initial_state/0,
-         next_state/3, postcondition/3,
-         precondition/2]).
--import(triq_dom, [oneof/1]).
+-export([command/1,
+	 initial_state/0,
+	 next_state/3,
+	 postcondition/3,
+	 precondition/2]).
+-import(triq_dom,
+	[oneof/1]).
 
 %%
 %% An instance of this module implements the "statem" API, but

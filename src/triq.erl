@@ -29,10 +29,18 @@
 %%
 -define(TEST_COUNT, 100).
 
--export([check/1, check/2, check/3, fails/1, module/1,
-	 counterexample/0, counterexample/1, numtests/2]).
+-export([check/1,
+	 check/2,
+	 check/3,
+	 fails/1,
+	 module/1,
+	 counterexample/0,
+	 counterexample/1,
+	 numtests/2]).
 
--import(triq_dom, [pick/2, shrink/2]).
+-import(triq_dom,
+	[pick/2,
+	 shrink/2]).
 
 -record(triq, {count=0,
 	      context=[],

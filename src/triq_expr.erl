@@ -1,6 +1,8 @@
 -module(triq_expr).
 
--export([eval/1, eval/2, free_vars/1]).
+-export([eval/1,
+	 eval/2,
+	 free_vars/1]).
 
 %%-----------------------------------------------------------------------
 %% @doc Evaluate `Body'.  Occurrences of `{call,M,F,A}'
