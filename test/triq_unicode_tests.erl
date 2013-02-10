@@ -19,7 +19,7 @@ equals(X, Y) -> io:format(user, "Are not equal ~p and ~p.", [X,Y]), false.
 prop_unicode_char() ->
     ?FORALL(Char, unicode_char(),
         begin
-%           io:format(user, "~p~n", [Char]),
+%%          io:format(user, "~p~n", [Char]),
             true
         end).
 
@@ -50,13 +50,13 @@ prop_unicode_characters() ->
 
 
 encoding() ->
-    [unicode, utf8, utf16, {utf16, little}, {utf16, big}, utf32, 
+    [unicode, utf8, utf16, {utf16, little}, {utf16, big}, utf32,
      {utf32, little}, {utf32, big}].
 
 
 prop_unicode_external_characters() ->
-    ?FORALL({Encoding, Chars}, 
-         oneof([{Encoding, unicode_characters(Encoding)} 
+    ?FORALL({Encoding, Chars},
+         oneof([{Encoding, unicode_characters(Encoding)}
                 || Encoding <- encoding()]),
             begin
                 List = unicode:characters_to_list(Chars, Encoding),
@@ -70,10 +70,10 @@ prop_unicode_external_characters() ->
 
 run_property_testing_test_() ->
     {timeout, 60, fun run_property_testing_case/0}.
-    
+
 run_property_testing_case() ->
     EunitLeader = erlang:group_leader(),
     erlang:group_leader(whereis(user), self()),
     Res = triq:module(?MODULE),
     erlang:group_leader(EunitLeader, self()),
-    ?assert(Res). 
+    ?assert(Res).
