@@ -31,7 +31,7 @@ And you're ready to write property tests.  An example property could be:
 <pre>prop_append() ->
     ?FORALL({Xs,Ys},{list(int()),list(int())},
             lists:reverse(Xs++Ys)
-            == 
+            ==
             lists:reverse(Ys) ++ lists:reverse(Xs)).</pre>
 
 To test this property, run `triq:check/1`, thus:
@@ -46,9 +46,9 @@ true
 If the test fails, it will try to shrink the result; here is an example:
 
 <pre>prop_delete() ->
-    ?FORALL(L,list(int()), 
+    ?FORALL(L,list(int()),
         ?IMPLIES(L /= [],
-            ?FORALL(I,elements(L), 
+            ?FORALL(I,elements(L),
                 ?WHENFAIL(io:format("L=~p, I=~p~n", [L,I]),
                           not lists:member(I,lists:delete(I,L)))))).
 </pre>
@@ -89,7 +89,7 @@ Simplified:
 false
 6> </pre>
 
-Modules compiled with the `triq.hrl` header, auto-export all functions named `prop_*`, 
+Modules compiled with the `triq.hrl` header, auto-export all functions named `prop_*`,
 and have a function added called `check/0` which runs `triq:check/1` on all the properties in the module.
 
     1> mymodule:check().
@@ -98,8 +98,6 @@ A handy addition that I use it to also add an `eunit` test, which tests it:
 
     property_test() -> true == check().
 
-Which can then automatically be run using your favourite `enuit` runner. 
+Which can then automatically be run using your favourite `enuit` runner.
 
 Good luck!
-
-

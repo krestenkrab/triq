@@ -10,7 +10,7 @@
 %%
 
 prop_pdict_statem() ->
-    ?FORALL(Cmds, 
+    ?FORALL(Cmds,
 	    triq_statem:commands(pdict_statem),
 	    begin
 		triq_statem:run_commands(pdict_statem, Cmds),
@@ -61,4 +61,3 @@ next_state(Props, _Var, {call, erlang, erase, [Key]}) ->
     proplists:delete(Key,Props);
 next_state(Props, _Var, {call, erlang, get, [_]}) ->
     Props.
-

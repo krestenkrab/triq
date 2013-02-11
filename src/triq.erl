@@ -6,7 +6,7 @@
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
 %% You may obtain a copy of the License at
-%%  
+%%
 %%     http://www.apache.org/licenses/LICENSE-2.0
 %%
 %% Unless required by applicable law or agreed to in writing, software
@@ -29,10 +29,18 @@
 %%
 -define(TEST_COUNT, 100).
 
--export([check/1, check/2, check/3, fails/1, module/1,  
-	 counterexample/0, counterexample/1, numtests/2]).
+-export([check/1,
+	 check/2,
+	 check/3,
+	 fails/1,
+	 module/1,
+	 counterexample/0,
+	 counterexample/1,
+	 numtests/2]).
 
--import(triq_dom, [pick/2, shrink/2]).
+-import(triq_dom,
+	[pick/2,
+	 shrink/2]).
 
 -record(triq, {count=0,
 	      context=[],
@@ -55,7 +63,7 @@ report_none(skip, _) ->
     ok.
 
 %%
-%% Reporting function used while testing, prints "..xxxx Failed!" 
+%% Reporting function used while testing, prints "..xxxx Failed!"
 %%
 report(pass,_) ->
     io:format(".");
@@ -67,25 +75,24 @@ report(fail,Value) ->
     io:format("Failed with: ~p~n", [Value]).
 
 %%
-%% 
+%%
 %%
 check_input(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
-
-    try Fun(Input) of	
-	true -> 
+    try Fun(Input) of
+	true ->
 	    DoReport(pass,true),
 	    {success, Count+1};
-	
-	{success, NewCount} -> 
+
+	{success, NewCount} ->
 	    {success, NewCount};
-	
-	{failure, _, _, _, _}=Fail -> 
+
+	{failure, _, _, _, _}=Fail ->
 	    Fail;
 
 	{'prop:timeout', Limit, Fun2, Body2} ->
 	    Yield = check_timeout(Fun,Input,IDom,Limit,Fun2,QCT#triq{body=Body2}),
 	    Yield;
-	
+
 	{'prop:fails', Property} ->
 	    case check_input(fun(none)->Property end,none,none,QCT#triq{}) of
 		{success, _} ->
@@ -94,11 +101,11 @@ check_input(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 								  |QCT#triq.context]}};
 		_ -> {success, Count+1}
 	    end;
-	
+
 	{'prop:implies', false, _, _, _} ->
 	    DoReport(skip,true),
 	    {success, Count};
-	
+
 	{'prop:implies', true, _Syntax, Fun2, Body2} ->
 	    check_input(fun(none)->Fun2()end,none,none,QCT#triq{body=Body2});
 
@@ -115,7 +122,7 @@ check_input(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 		Any ->
 		    Any
 	    end;
-	
+
 	{'prop:trapexit', Fun2, Body2} ->
 	    WasTrap = process_flag(trap_exit, true),
 	    Main = self(),
@@ -125,8 +132,8 @@ check_input(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 					    QCT#triq{body=Body2}),
 			     Main ! {self(), Result}
 		     end),
-	    receive 
-		{PID, Result} -> 
+	    receive
+		{PID, Result} ->
 
 		    %% unlink and flush any EXITs
 		    unlink(PID),
@@ -139,11 +146,11 @@ check_input(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 		{'EXIT', PID, Reason} ->
 		    process_flag(trap_exit, WasTrap),
 		    DoReport(fail, Reason),
-		    {failure, Fun, Input, IDom, 
+		    {failure, Fun, Input, IDom,
 		     QCT#triq{count=Count+1,result={'EXIT', Reason}}}
-		    
+
 	    end;
-	
+
 	{'prop:forall', Dom2, Syntax2, Fun2, Body2} ->
 	    check_forall(0, QCT#triq.run_iter, Dom2, Fun2, Syntax2, QCT#triq{body=Body2});
 
@@ -155,18 +162,18 @@ check_input(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 	Class : Exception ->
 	    DoReport(fail, {Class, Exception, erlang:get_stacktrace()}),
 	    {failure, Fun, Input, IDom, QCT#triq{count=Count+1,result={'EXIT',Exception}}}
-	
+
     end.
-    
+
 
 check_timeout(Fun,Input,IDom,Limit,Fun2,#triq{count=Count,report=DoReport}=QCT) ->
     Main = self(),
-    Controller = 
+    Controller =
 	spawn
-	  (fun() -> 
+	  (fun() ->
 		   process_flag(trap_exit, true),
 		   Controller = self(),
-		   
+
 		   Slave = spawn_link
 			     (fun() ->
 				      Slave = self(),
@@ -176,41 +183,41 @@ check_timeout(Fun,Input,IDom,Limit,Fun2,#triq{count=Count,report=DoReport}=QCT) 
 						     QCT),
 				      Controller ! {Slave, Result}
 			      end),
-		   
-		   receive 
+
+		   receive
 		       {Slave, Result} ->
 			   %% from Slave
 			   Main ! {Controller, Result };
-		       
+
 		       {'EXIT', Slave, Reason} ->
 			   %% from Slave
 			   DoReport(fail, Reason),
-			   Main ! {Controller, {failure, Fun, Input, IDom, 
+			   Main ! {Controller, {failure, Fun, Input, IDom,
 						QCT#triq{count=Count+1,
 							 result={'EXIT', Reason}}}};
-		       
+
 		       {'EXIT', _, timeout} ->
 			   %% from Main
-			   erlang:exit(Slave,kill)			     
+			   erlang:exit(Slave,kill)
 		   end
 	   end),
 
-    Yield = receive 
+    Yield = receive
 		{Controller, Result} ->
 		    Result
-		
+
 	    after Limit ->
-		    
+
 		    %% Yank the controller (and the slave)
 		    erlang:exit(Controller, timeout),
-		    
+
 		    %% flush any reply from our queue
 		    receive {Controller, _} -> ignore
 		    after 5 -> ignore end,
-		    
+
 		    Reason = {timeout, Limit},
 		    DoReport(fail, Reason),
-		    {failure, Fun, Input, IDom, 
+		    {failure, Fun, Input, IDom,
 		     QCT#triq{count=Count+1,result={'EXIT', Reason}}}
     end,
 
@@ -218,7 +225,6 @@ check_timeout(Fun,Input,IDom,Limit,Fun2,#triq{count=Count,report=DoReport}=QCT) 
 
 check_forall(N,N,_,_,_,#triq{count=Count}) ->
     {success, Count};
-
 check_forall(N,NMax,Dom,Fun,Syntax,#triq{context=Context,values=Values}=QCT) ->
 
     DomSize = 2 + 2*N,
@@ -232,19 +238,18 @@ check_forall(N,NMax,Dom,Fun,Syntax,#triq{context=Context,values=Values}=QCT) ->
 	end,
 
     case check_input(Fun,Input,InputDom,
-		     QCT#triq{size=DomSize, 
+		     QCT#triq{size=DomSize,
 			      context=[{Syntax,Fun,Input,InputDom}|Context],
-			      values=NewValues}) 
+			      values=NewValues})
 	of
-	
+
 	%% it did not fail, try again with N := N+1
-	{success,NewCount} -> 
+	{success,NewCount} ->
 	    check_forall(N+1, NMax, Dom, Fun, Syntax, QCT#triq{count=NewCount});
-	
+
 	%% it failed, report it!
 	{failure, _, _, _, Ctx} ->
 	    {failure, Fun, Input, InputDom, Ctx}
-    
     end.
 
 
@@ -284,7 +289,7 @@ module(Module) when is_atom(Module) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Run QuickCheck.  If argument is an atom, it runs triq:module/1
-%% checking all the properties in said module; otherwise if the 
+%% checking all the properties in said module; otherwise if the
 %% argument is a property, it runs QuickCheck on said property.
 %%
 %% @spec check( atom() | property() ) -> any()
@@ -292,16 +297,13 @@ module(Module) when is_atom(Module) ->
 %%--------------------------------------------------------------------
 check(Module) when is_atom(Module)->
     module(Module);
-
 check(Property) ->
     check(Property, [], ?TEST_COUNT).
 
 check(Module, _RunIters) when is_atom(Module) ->
     module(Module);
-
 check(Property, RunIters) when is_integer(RunIters), RunIters>0 ->
     check(Property, [], RunIters);
-
 check(Property, CounterExample) when is_list(CounterExample) ->
     check(Property, CounterExample, ?TEST_COUNT).
 
@@ -314,10 +316,8 @@ check(Property, CounterExample) when is_list(CounterExample) ->
 %% @spec check( property(), [any()], integer() ) -> any()
 %% @end
 %%--------------------------------------------------------------------
-
 check(Property, Counterexample, RunIters) ->
-
-    case check_input(fun(nil)->Property end, 
+    case check_input(fun(nil)->Property end,
 	       nil,
 	       nil,
 	       #triq{report=fun report/2, run_iter=RunIters, values=Counterexample}) of
@@ -332,7 +332,7 @@ check(Property, Counterexample, RunIters) ->
 	    %% the check/5 function constructs in backwards, so...
 	    %%
 	    Context = lists:reverse(Ctx),
-	    
+
 	    %% Run the shrinking function
 	    %%
 	    Simp = shrink_loop(Fun,Input,InputDom,?SHRINK_COUNT,tl(Context)),
@@ -341,7 +341,7 @@ check(Property, Counterexample, RunIters) ->
 	    %% Compute the counter example
 	    %%
 	    CounterExample = [{Syntax,Fun2,SimplifiedInput,Dom2} ||
-		{{Syntax,Fun2,_Input,Dom2}, SimplifiedInput} 
+		{{Syntax,Fun2,_Input,Dom2}, SimplifiedInput}
 		    <- lists:zip(Context,Simp)],
 
 	    %% save the counter example
@@ -349,13 +349,12 @@ check(Property, Counterexample, RunIters) ->
 
 	    io:format("Simplified:~n"),
 	    print_counter_example(CounterExample),
-	    
+
 	    Error;
 
 	{success, Count} ->
 	    io:format("~nRan ~p tests~n", [Count]),
 	    true
-
     end.
 
 print_counter_example(CounterExample) ->
@@ -375,17 +374,15 @@ counterexample() ->
 
 %%
 %% when the property has nested ?FORALL statements,
-%% this is the function that tries to make the inner 
+%% this is the function that tries to make the inner
 %% ?FORALL smaller; after trying the outer.
 %%
-
-shrink_deeper(Input,[{_,F1,I1,G1}|T]) -> 
+shrink_deeper(Input,[{_,F1,I1,G1}|T]) ->
     [Input | shrink_loop(F1,I1,G1,?SHRINK_COUNT,T)];
 shrink_deeper(Input,[]) -> [Input].
 
 
 %% this is the main logic for the simplify function
-
 shrink_loop(Fun,Input,InputDom,GS,Context) ->
     InitialTested = gb_sets:add(Input,gb_sets:new()),
     shrink_loop(Fun,Input,InputDom,GS,Context, InitialTested).
@@ -394,7 +391,6 @@ shrink_loop(_,Input,_,0,Context,_) ->
     shrink_deeper(Input,Context);
 
 shrink_loop(Fun,Input,InputDom,GS,Context,Tested) ->
-
     %%
     %% simplify_value will attempt to shrink the
     %% value of Input (beloging to the InputDom domain).
@@ -407,7 +403,7 @@ shrink_loop(Fun,Input,InputDom,GS,Context,Tested) ->
 
     IsTested = gb_sets:is_member(NewInput,Tested),
 
-    if 
+    if
 	IsTested ->
 	    %% aparently, there was some randomness in the
 	    %% shrinking that made us shrink again to a value
@@ -421,14 +417,14 @@ shrink_loop(Fun,Input,InputDom,GS,Context,Tested) ->
 	    NewTested = gb_sets:add(NewInput,Tested),
 
 	    case check_input(Fun,NewInput,NewDom,#triq{size=GS,shrinking=true}) of
-		
+
 		%% still failed, try to simplify some more
-		{failure, _, _, _, #triq{context=C2}} -> 
+		{failure, _, _, _, #triq{context=C2}} ->
 		    shrink_loop(Fun,NewInput,NewDom,GS,C2,NewTested);
-		
+
 		%% oops, we simplified too much; try again
 		%% with the same inputs
-		{success, _} -> 
+		{success, _} ->
 		    shrink_loop(Fun,Input,InputDom,GS-1,Context,NewTested)
 	    end
     end.
@@ -436,16 +432,13 @@ shrink_loop(Fun,Input,InputDom,GS,Context,Tested) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% A Property which succeeds when its argument fails, and fails
-%% if the argument succeeds.  This is very handy for properties 
-%% that <em>should fail</em>. 
+%% if the argument succeeds.  This is very handy for properties
+%% that <em>should fail</em>.
 %%
 %% @spec fails( property() ) -> property()
 %% @end
 %%--------------------------------------------------------------------
 fails(Prop) ->
     {'prop:fails', Prop}.
-
-
 numtests(Num,Prop) ->
     {'prop:numtests', Num, Prop}.
-

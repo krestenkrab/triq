@@ -6,7 +6,7 @@
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
 %% You may obtain a copy of the License at
-%%  
+%%
 %%     http://www.apache.org/licenses/LICENSE-2.0
 %%
 %% Unless required by applicable law or agreed to in writing, software
@@ -17,9 +17,16 @@
 %%
 -module(triq_fsm).
 
--export([commands/1, commands/2, run_commands/2, run_commands/3, state_names/1]).
--import(triq_expr, [eval/2, free_vars/1]).
--import(triq_dom, [oneof/1]).
+-export([commands/1,
+	 commands/2,
+	 run_commands/2,
+	 run_commands/3,
+	 state_names/1]).
+-import(triq_expr,
+	[eval/2,
+	 free_vars/1]).
+-import(triq_dom,
+	[oneof/1]).
 
 
 %% FSM API
@@ -75,4 +82,3 @@ do_run_command(Commands, Env, Module, History, State) ->
 
 state_names(H) ->
     [N || {{N,_},_} <- H].
-
