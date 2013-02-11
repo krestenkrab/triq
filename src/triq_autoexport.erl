@@ -1,4 +1,5 @@
-%%
+%% -*- erlang-indent-level: 4;indent-tabs-mode: nil -*-
+%% ex: ts=4 sw=4 et
 %%
 %% For the purposes of licensing, I will permit myself to regard
 %% this module as a "separate library", because it is not linked

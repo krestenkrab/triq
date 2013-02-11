@@ -1,3 +1,6 @@
+%% -*- erlang-indent-level: 4;indent-tabs-mode: nil -*-
+%% ex: ts=4 sw=4 et
+
 -module(pdict_statem).
 
 -include("triq.hrl").
