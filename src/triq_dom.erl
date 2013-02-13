@@ -177,8 +177,7 @@ pick(T,SampleSize) when is_tuple(T), SampleSize > 0, is_integer(SampleSize) ->
     {DomList,List} = pick(tuple_to_list(T), SampleSize),
     {list_to_tuple(DomList), list_to_tuple(List)};
 %%
-%% for Lists, we traverse down the list and generate
-%% each head
+%% For lists, we traverse down the list and generate each head
 %%
 pick([], _) -> {[],[]};
 pick([H|T], SampleSize)
@@ -192,7 +191,7 @@ pick([H|T], SampleSize)
 pick(F,SampleSize) when erlang:is_function(F,0) ->
     pick(F(),SampleSize);
 %%
-%% simple values that generate themselves
+%% Simple values that generate themselves
 %%
 pick(V,_) when is_atom(V);
 	       is_number(V);
@@ -313,7 +312,7 @@ shrink_pair([HDom|TDom]=ListDom, [H|T]=List, NAttempts) ->
 	{{_,H}, {_,T}} ->
 	    shrink_pair(ListDom,List,NAttempts-1);
 
-	%% either H or T changed.
+	%% either H or T changed
 	{{HSDom,HS}, {TSDom,TS}} ->
 	    {[HSDom|TSDom], [HS|TS]}
     end.
@@ -355,7 +354,7 @@ shrink_list_samesize(ListDom,List,Length,NAttempts) when is_list(List) ->
 
 %%
 %% Given a list, shrink HowMany of it's elements,
-%% but don't reduce the list length
+%% but don't reduce the list length.
 %%
 -spec shrink_list_members([domain(T)],[T],non_neg_integer(),non_neg_integer()) ->
     {[domain(T)],[T]}.
@@ -384,7 +383,7 @@ shrink_list_members(ListDom, List, Len, HowMany) when is_list(List), is_list(Lis
 
 %%-------------------------------------------------------------------
 %%
-%% Now, the specifc domains
+%% Now, the specific domains
 %%
 %%-------------------------------------------------------------------
 
@@ -563,7 +562,6 @@ int() ->
 	      end
 	}.
 
-
 int(Max) ->
     int(0, Max).
 
@@ -583,6 +581,7 @@ int(Min, Max) ->
 -spec byte() -> domrec(integer()).
 byte() ->
     int(0, 255).
+
 
 %% @doc The domain of positive integers.
 %% @spec pos_integer() -> domain(pos_integer())
