@@ -20,15 +20,15 @@
 -module(triq_fsm).
 
 -export([commands/1,
-	 commands/2,
-	 run_commands/2,
-	 run_commands/3,
-	 state_names/1]).
+         commands/2,
+         run_commands/2,
+         run_commands/3,
+         state_names/1]).
 -import(triq_expr,
-	[eval/2,
-	 free_vars/1]).
+        [eval/2,
+         free_vars/1]).
 -import(triq_dom,
-	[oneof/1]).
+        [oneof/1]).
 
 
 %% FSM API
@@ -47,39 +47,40 @@ run_commands(Module, Commands) ->
 run_commands(Module,Commands,Env) ->
     StubModule = triq_fsm_stub:new(Module),
     do_run_command(Commands,
-		   Env,
-		   StubModule,
-		   [],
-		   StubModule:initial_state()).
+                   Env,
+                   StubModule,
+                   [],
+                   StubModule:initial_state()).
 
 do_run_command(Commands, Env, Module, History, State) ->
     case Commands of
-	[] ->
-	    {History, eval(Env,State), ok};
+        [] ->
+            {History, eval(Env,State), ok};
 
-	[{init,S}|Rest] ->
-	    do_run_command(Rest, Env, Module, History, S);
+        [{init,S}|Rest] ->
+            do_run_command(Rest, Env, Module, History, S);
 
-	[{set, {var,V}=Var, {call,M,F,A}=SymCall}|Rest] ->
-	    M2=eval(Env,M),
-	    F2=eval(Env,F),
-	    A2=eval(Env,A),
+        [{set, {var,V}=Var, {call,M,F,A}=SymCall}|Rest] ->
+            M2=eval(Env,M),
+            F2=eval(Env,F),
+            A2=eval(Env,A),
 
-	    Res = apply(M2,F2,A2), % Same as eval(Env, SymCall), but we need to log in History.
+            %% Same as eval(Env, SymCall), but we need to log in History.
+            Res = apply(M2,F2,A2),
 
-	    SubstCall = {call, M2,F2,A2},
+            SubstCall = {call, M2,F2,A2},
             {Name, _} = State,
-	    History2 = [{{Name,SubstCall},Res}|History],
+            History2 = [{{Name,SubstCall},Res}|History],
 
-	    case Module:postcondition(State,SubstCall,Res) of
-		true ->
-		    Env2 = [{V,Res}|proplists:delete(V,Env)],
-		    State2 = Module:next_state(State,Var,SymCall),
-		    do_run_command(Rest, Env2, Module, History2, State2);
+            case Module:postcondition(State,SubstCall,Res) of
+                true ->
+                    Env2 = [{V,Res}|proplists:delete(V,Env)],
+                    State2 = Module:next_state(State,Var,SymCall),
+                    do_run_command(Rest, Env2, Module, History2, State2);
 
-		Other ->
-		    {History, eval(Env,State), {postcondition, Other}}
-	    end
+                Other ->
+                    {History, eval(Env,State), {postcondition, Other}}
+            end
     end.
 
 state_names(H) ->

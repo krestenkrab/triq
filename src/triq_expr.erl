@@ -4,8 +4,8 @@
 -module(triq_expr).
 
 -export([eval/1,
-	 eval/2,
-	 free_vars/1]).
+         eval/2,
+         free_vars/1]).
 
 %%-----------------------------------------------------------------------
 %% @doc Evaluate `Body'.  Occurrences of `{call,M,F,A}'
@@ -45,25 +45,24 @@ eval(PropList, [H|T]) ->
     [eval(PropList,H) | eval(PropList,T)];
 eval(PropList, Tuple) when is_tuple(Tuple) ->
     case tuple_to_list(Tuple) of
-	[call, Mod, Fun, Args] ->
-	    M = eval(PropList, Mod),
-	    F = eval(PropList, Fun),
-	    A = eval(PropList, Args),
-	    erlang:apply(M,F,A);
+        [call, Mod, Fun, Args] ->
+            M = eval(PropList, Mod),
+            F = eval(PropList, Fun),
+            A = eval(PropList, Args),
+            erlang:apply(M,F,A);
 
-	[var, Name] when is_integer(Name) ->
-	    case proplists:lookup(Name, PropList) of
-		none -> {var, Name};
-		{Name, Value} -> Value
-	    end;
+        [var, Name] when is_integer(Name) ->
+            case proplists:lookup(Name, PropList) of
+                none -> {var, Name};
+                {Name, Value} -> Value
+            end;
 
-	List ->
-	    list_to_tuple(eval(PropList,List))
+        List ->
+            list_to_tuple(eval(PropList,List))
     end;
 
 eval(_, Term) ->
     Term.
-
 
 free_vars([H|T]) -> free_vars(H) ++ free_vars(T);
 free_vars({var, Name}=Var) when is_integer(Name) -> [Var];

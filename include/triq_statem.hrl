@@ -18,8 +18,10 @@
 %% limitations under the License.
 %%
 
--import(triq_statem, [commands/1,
-		      run_commands/2, run_commands/3,
-		      state_after/2,
-		      prop_statem/1,
-                      command_names/1]).
+-import(triq_statem,
+        [commands/1,
+         run_commands/2,
+         run_commands/3,
+         state_after/2,
+         prop_statem/1,
+         command_names/1]).

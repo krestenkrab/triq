@@ -24,37 +24,39 @@
 
 %% properties
 -define(FORALL(X,Gen,Property),
-	{'prop:forall', Gen, ??X, fun(X)-> begin Property end end, ??Property}).
+        {'prop:forall', Gen, ??X, fun(X)-> begin Property end end, ??Property}).
 -define(IMPLIES(Pre, Property),
-	{'prop:implies', Pre, ??Pre, ?DELAY( Property ), ??Property}).
+        {'prop:implies', Pre, ??Pre, ?DELAY( Property ), ??Property}).
 -define(WHENFAIL(Action, Property),
-	{'prop:whenfail', ?DELAY(Action), ?DELAY(Property), ??Property}).
+        {'prop:whenfail', ?DELAY(Action), ?DELAY(Property), ??Property}).
 -define(TRAPEXIT(Property),
-	{'prop:trapexit', ?DELAY(Property), ??Property}).
+        {'prop:trapexit', ?DELAY(Property), ??Property}).
 -define(TIMEOUT(Limit,Property),
-	{'prop:timeout', Limit, ?DELAY(Property), ??Property}).
+        {'prop:timeout', Limit, ?DELAY(Property), ??Property}).
 
 %%
 %% import property functions
 %%
--import(triq, [fails/1, check/1]).
+-import(triq,
+        [fails/1,
+         check/1]).
 
 
 %% value domains
 
-%%% LET is also defined by eunit; what to do?
+%% LET is also defined by eunit; what to do?
 -ifndef(LET).
 -define(LET(X,Gen1,Gen2),
-	?DOMAIN_MODULE:bind(Gen1, fun(X)->Gen2 end)).
+        ?DOMAIN_MODULE:bind(Gen1, fun(X)->Gen2 end)).
 -endif.
 -define(LETSHRINK(X,Gen1,Gen2),
-	?DOMAIN_MODULE:bindshrink(Gen1, fun(X)->Gen2 end)).
+        ?DOMAIN_MODULE:bindshrink(Gen1, fun(X)->Gen2 end)).
 
 -define(SIZED(Size,Gen),
-	?DOMAIN_MODULE:sized(fun(Size) -> Gen end)).
+        ?DOMAIN_MODULE:sized(fun(Size) -> Gen end)).
 
 -define(SUCHTHAT(X,G,P),
-	?DOMAIN_MODULE:suchthat(G, fun(X) -> P end)).
+        ?DOMAIN_MODULE:suchthat(G, fun(X) -> P end)).
 
 
 %%
@@ -87,7 +89,7 @@
          non_neg_integer/0,
          pos_integer/0,
 
-%% Unicode
+         %% Unicode
          unicode_char/0,
          unicode_string/0,
          unicode_string/1,
@@ -97,7 +99,7 @@
          unicode_characters/0,
          unicode_characters/1,
 
-%% using a generator
+         %% using a generator
          bind/2,
          bindshrink/2,
          suchthat/2,

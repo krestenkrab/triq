@@ -41,20 +41,20 @@
 
 parse_transform(Forms, Options) ->
     PropPrefix = proplists:get_value(triq_prop_prefix, Options,
-				     ?DEFAULT_PROP_PREFIX),
+                                     ?DEFAULT_PROP_PREFIX),
     F = fun (Form, Set) ->
-		t_form(Form, Set, PropPrefix)
-	end,
+                t_form(Form, Set, PropPrefix)
+        end,
     Exports = sets:to_list(lists:foldl(F, sets:new(), Forms)),
     t_rewrite(Forms, Exports).
 
 t_form({function, _L, Name, 0, _Cs}, S, PropPrefix) ->
     N = atom_to_list(Name),
     case lists:prefix(PropPrefix, N) of
-	true ->
-	    sets:add_element({Name, 0}, S);
-	false ->
-	    S
+        true ->
+            sets:add_element({Name, 0}, S);
+        false ->
+            S
     end;
 t_form(_, S, _) ->
     S.
@@ -74,23 +74,23 @@ rewrite([F | Fs], As, Module, GenQC) ->
     rewrite(Fs, [F | As], Module, GenQC);
 rewrite([], As, Module, GenQC) ->
     {if GenQC ->
-	     Triq = {record_field,0,{atom,0,''},{atom,0,triq}},
-	     [{function,0,?CHECK,0,
-	       [{clause,0,[],[],
-		 [{call,0,{remote,0,Triq,{atom,0,module}},
-		   [{atom,0,Module}]}]}]}
-	      | As];
-	true ->
-	     As
+             Triq = {record_field,0,{atom,0,''},{atom,0,triq}},
+             [{function,0,?CHECK,0,
+               [{clause,0,[],[],
+                 [{call,0,{remote,0,Triq,{atom,0,module}},
+                   [{atom,0,Module}]}]}]}
+              | As];
+        true ->
+             As
      end,
      GenQC}.
 
 module_decl(Name, M, Fs, Exports) ->
     Module = if is_atom(Name) -> Name;
-		true -> list_to_atom(packages:concat(Name))
-	     end,
+                true -> list_to_atom(packages:concat(Name))
+             end,
     {Fs1, GenQC} = rewrite(Fs, [], Module, true),
     Es = if GenQC -> [{?CHECK,0} | Exports];
-	    true -> Exports
-	 end,
+            true -> Exports
+         end,
     [M, {attribute,0,export,Es} | lists:reverse(Fs1)].

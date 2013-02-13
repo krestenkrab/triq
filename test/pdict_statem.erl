@@ -14,11 +14,11 @@
 
 prop_pdict_statem() ->
     ?FORALL(Cmds,
-	    triq_statem:commands(pdict_statem),
-	    begin
-		triq_statem:run_commands(pdict_statem, Cmds),
-		true
-	    end).
+            triq_statem:commands(pdict_statem),
+            begin
+                triq_statem:run_commands(pdict_statem, Cmds),
+                true
+            end).
 
 -define(KEYS, [a,b,c,d]).
 key() ->
@@ -26,17 +26,17 @@ key() ->
 
 initial_state() ->
     lists:filter(fun({Key,_}) -> lists:member(Key, ?KEYS) end,
-		 erlang:get()).
+                 erlang:get()).
 
 command([]) ->
     {call, erlang, put, [key(), int()]};
 command(Props) ->
     ?LET({Key,Value}, frequency([{5, elements(Props)},
-				 {1, {key(),int()}}]),
-	 oneof([{call, erlang, put,   [Key, Value]},
-		{call, erlang, get,   [Key]},
-		{call, erlang, erase, [Key]}
-	       ])).
+                                 {1, {key(),int()}}]),
+         oneof([{call, erlang, put,   [Key, Value]},
+                {call, erlang, get,   [Key]},
+                {call, erlang, erase, [Key]}
+               ])).
 
 precondition(_, {call, erlang, put, [_,_]}) ->
     true;

@@ -20,12 +20,12 @@
 -module(triq_fsm_stub, [Module]).
 
 -export([command/1,
-	 initial_state/0,
-	 next_state/3,
-	 postcondition/3,
-	 precondition/2]).
+         initial_state/0,
+         next_state/3,
+         postcondition/3,
+         precondition/2]).
 -import(triq_dom,
-	[oneof/1]).
+        [oneof/1]).
 
 %%
 %% An instance of this module implements the "statem" API, but
@@ -67,7 +67,6 @@ initial_state() ->
     {Name, _} = Module:initial_state(),
     { Name, Module:initial_state_data() }.
 
-
 %% INTERNAL
 
 find_next_state(Module, FromName, StateData, {call, M,F,Arg}=_Call) ->
@@ -75,7 +74,7 @@ find_next_state(Module, FromName, StateData, {call, M,F,Arg}=_Call) ->
     Candidates2 =
         lists:foldl(fun ({ToName, {call, M2, F2, ArgDom}}, Acc)
                           when M2 == M, F2 == F
-                        ->
+                               ->
                             case length(ArgDom) == length(Arg) of
                                 true when ToName == history ->
                                     ordsets:add_element(FromName, Acc);
