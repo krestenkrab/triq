@@ -1020,7 +1020,7 @@ return(Val) ->
 
 %% @doc Support function for the ?SIZED macro.
 %% @spec sized( fun((integer()) -> domain(T)) ) -> domain(T)
--spec(sized( fun((integer()) -> domain(T)) ) -> domain(T)).
+-spec sized( fun((integer()) -> domain(T)) ) -> domain(T).
 sized(Fun) ->
     #?DOM{kind=#sized{body=Fun},
 	 pick=fun(#?DOM{kind=#sized{body=F}},GS) -> pick(F(GS),GS) end
