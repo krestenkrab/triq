@@ -1,3 +1,6 @@
+%% -*- erlang-indent-level: 4;indent-tabs-mode: nil -*-
+%% ex: ts=4 sw=4 et
+%%
 %% @author Uvarov Michael <arcusfelis@gmail.com>
 -module(triq_unicode_tests).
 
@@ -18,17 +21,18 @@ equals(X, Y) -> io:format(user, "Are not equal ~p and ~p.", [X,Y]), false.
 
 prop_unicode_char() ->
     ?FORALL(Char, unicode_char(),
-        begin
-%%          io:format(user, "~p~n", [Char]),
-            true
-        end).
+            begin
+                %% io:format(user, "~p~n", [Char]),
+                true
+            end).
+
 
 prop_unicode_binary() ->
     ?FORALL(Bin, unicode_binary(),
-        begin
-        equals(Bin, unicode:characters_to_binary(
-                    unicode:characters_to_list(Bin)))
-        end).
+            begin
+                equals(Bin, unicode:characters_to_binary(
+                              unicode:characters_to_list(Bin)))
+            end).
 
 
 %% Check a binary generator with fixed length.
@@ -41,7 +45,7 @@ prop_sized_unicode_binary() ->
 prop_unicode_string() ->
     ?FORALL(Str, unicode_string(),
             equals(Str, unicode:characters_to_list(
-                           unicode:characters_to_binary(Str)))).
+                          unicode:characters_to_binary(Str)))).
 
 
 prop_unicode_characters() ->
@@ -56,8 +60,8 @@ encoding() ->
 
 prop_unicode_external_characters() ->
     ?FORALL({Encoding, Chars},
-         oneof([{Encoding, unicode_characters(Encoding)}
-                || Encoding <- encoding()]),
+            oneof([{Encoding, unicode_characters(Encoding)}
+                   || Encoding <- encoding()]),
             begin
                 List = unicode:characters_to_list(Chars, Encoding),
                 is_binary(unicode:characters_to_binary(Chars, Encoding))

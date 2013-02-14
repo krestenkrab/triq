@@ -1,3 +1,5 @@
+%%% -*- erlang-indent-level: 4;indent-tabs-mode: nil -*-
+%%% ex: ts=4 sw=4 et
 %%%----------------------------------------------------------------
 %%% @author Kresten Krab Thorup <krab@trifork.com>
 %%% @doc
@@ -11,7 +13,7 @@
 
 %% Application callbacks
 -export([start/2,
-	 stop/1]).
+         stop/1]).
 
 %%%===================================================================
 %%% Application callbacks
