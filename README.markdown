@@ -98,6 +98,6 @@ A handy addition that I use it to also add an `eunit` test, which tests it:
 
     property_test() -> true == check().
 
-Which can then automatically be run using your favourite `enuit` runner.
+Which can then automatically be run using your favourite `eunit` runner.
 
 Good luck!
