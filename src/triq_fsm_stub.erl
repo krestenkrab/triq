@@ -64,7 +64,14 @@ command({FromName, StateData}) ->
     oneof( Calls ).
 
 initial_state() ->
-    {Name, _} = Module:initial_state(),
+    %% TODO: Some fsm specs return additional data as the 2nd element
+    %% of a tuple. How should that data be used for the state?
+    Name = case Module:initial_state() of
+               {State, _} ->
+                   State;
+               State when is_atom(State) ->
+                   State
+           end,
     { Name, Module:initial_state_data() }.
 
 %% INTERNAL
