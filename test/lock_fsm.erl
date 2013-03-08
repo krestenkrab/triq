@@ -144,9 +144,9 @@ prop_lock_fsm() ->
     ?FORALL(
        Cmds, triq_fsm:commands(?MODULE),
        begin
-           {ok, _} = start(?CODE),
+           start(?CODE),
            {History, State, Result} = triq_fsm:run_commands(?MODULE, Cmds),
-           ok = stop(),
+           stop(),
            ?WHENFAIL(io:format(user,
                                "History: ~p~n"
                                "State: ~p~n"
