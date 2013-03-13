@@ -42,6 +42,12 @@ boolean_test() ->
     Unique = fun ordsets:from_list/1,
     ?assertEqual([false, true], Unique(triq_dom:sample(bool()))).
 
+prop_pos_integer() ->
+    ?FORALL(PosInt, pos_integer(), PosInt > 0).
+
+prop_non_neg_integer() ->
+    ?FORALL(NonNegInt, non_neg_integer(), NonNegInt >= 0).
+
 prop_append() ->
     ?FORALL({Xs,Ys},{list(int()),list(int())},
             ?TRAPEXIT(lists:reverse(Xs++Ys)
