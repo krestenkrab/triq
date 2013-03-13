@@ -600,26 +600,33 @@ byte() ->
     int(0, 255).
 
 
+%% @doc The domain of non-negative integers.
+%% @spec non_neg_integer() -> domain(non_neg_integer())
+-spec non_neg_integer() -> domrec(non_neg_integer()).
+non_neg_integer() ->
+    #?DOM{
+        kind=int,
+        shrink=fun(Dom,Val) when Val>0  -> {Dom,Val-1};
+                  (Dom,0) -> {Dom,0}
+               end,
+        pick=fun(Dom,SampleSize) ->
+                     {Dom, abs(random:uniform(SampleSize)) + 0}
+             end
+       }.
+
 %% @doc The domain of positive integers.
 %% @spec pos_integer() -> domain(pos_integer())
 -spec pos_integer() -> domrec(pos_integer()).
 pos_integer() ->
     #?DOM{
         kind=int,
-        shrink=fun(Dom,Val) when Val>0 -> {Dom,Val-1};
-                  (Dom,Val) when Val<0 -> {Dom,Val+1};
-                  (Dom,0) -> {Dom,0}
+        shrink=fun(Dom,Val) when Val>1 -> {Dom,Val-1};
+                  (Dom,1) -> {Dom,1}
                end,
         pick=fun(Dom,SampleSize) ->
-                     {Dom, abs(random:uniform(SampleSize) - (SampleSize div 2))}
+                     {Dom, abs(random:uniform(SampleSize)) + 1}
              end
        }.
-
-%% @doc The domain of non-negative integers.
-%% @spec non_neg_integer() -> domain(non_neg_integer())
--spec non_neg_integer() -> domrec(non_neg_integer()).
-non_neg_integer() ->
-    pos_integer().
 
 
 %% @doc The domain of floats.
