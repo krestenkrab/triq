@@ -17,13 +17,13 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
--module(triq_fsm_stub, [Module]).
+-module(triq_fsm_stub).
 
--export([command/1,
-         initial_state/0,
-         next_state/3,
-         postcondition/3,
-         precondition/2]).
+-export([command/2,
+         initial_state/1,
+         next_state/4,
+         postcondition/4,
+         precondition/3]).
 -import(triq_dom,
         [oneof/1]).
 
@@ -32,7 +32,7 @@
 %% delegates calls to an underlying implementation of the "fsm" API.
 %%
 
-precondition({FromName, StateData}, Call) ->
+precondition(Module, {FromName, StateData}, Call) ->
     case find_next_state(Module, FromName, StateData, Call) of
         [ToName] ->
             Module:precondition(FromName, ToName, StateData, Call);
@@ -40,10 +40,10 @@ precondition({FromName, StateData}, Call) ->
             false
     end.
 
-postcondition({ToName, StateData}, Call, Result) ->
+postcondition(Module, {ToName, StateData}, Call, Result) ->
     Module:postcondition(undefined, ToName, StateData, Call, Result).
 
-next_state({FromName, StateData}, Result, Call) ->
+next_state(Module, {FromName, StateData}, Result, Call) ->
     case find_next_state(Module, FromName, StateData, Call) of
         [ToName] ->
             ToStateData =
@@ -59,11 +59,11 @@ next_state({FromName, StateData}, Result, Call) ->
             exit({no_transition, FromName, Call})
     end.
 
-command({FromName, StateData}) ->
+command(Module, {FromName, StateData}) ->
     Calls = [ Call || {_ToName, Call} <- Module:FromName( StateData ) ],
     oneof( Calls ).
 
-initial_state() ->
+initial_state(Module) ->
     %% TODO: Some fsm specs return additional data as the 2nd element
     %% of a tuple. How should that data be used for the state?
     Name = case Module:initial_state() of
