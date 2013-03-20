@@ -6,6 +6,7 @@ doc/edoc-info
 doc/erlang.png
 doc/stylesheet.css
 .eunit
+.qc
 *.beam
 *.S
 *.erlx

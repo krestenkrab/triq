@@ -27,3 +27,6 @@ clean:
 
 dialyzer:
 	./rebar analyze
+
+qc:
+	./rebar qc
