@@ -1,10 +1,10 @@
 %% -*- erlang-indent-level: 4;indent-tabs-mode: nil -*-
 %% ex: ts=4 sw=4 et
 
-%% TODO: Share code with triq_statem_fsm. Until then make sure you
-%% apply any changes to triq_statem_fsm as well.
+%% TODO: Share code with triq_statem. Until then make sure you apply
+%% any changes to triq_statem as well.
 
--module(triq_statem).
+-module(triq_statem_fsm).
 
 -define(TRIES,100).
 -define(FORALL(X,Gen,Property),
@@ -30,7 +30,7 @@ commands(Module) ->
     domain(commands,
            fun(_,Size) ->
                    gen_commands(Module,
-                                Module:initial_state(),
+                                triq_fsm_stub:initial_state(Module),
                                 [],[],[],
                                 Size, Size, ?TRIES)
            end,
@@ -56,13 +56,13 @@ gen_commands(Module,State,_,_,_,_,_,0) ->
 gen_commands(Module,State,States,Domains,[],Size,Count,Tries) ->
     gen_commands(Module,State,States,Domains,[{init,State}],Size,Count,Tries);
 gen_commands(Module,State,States,Domains,Commands,Size,Count,Tries) ->
-    CmdDom = Module:command(State),
+    CmdDom = triq_fsm_stub:command(Module, State),
     {CD,C} = pick(CmdDom,Size),
 
-    case Module:precondition(State, C) of
+    case triq_fsm_stub:precondition(Module, State, C) of
         true ->
             Var = {var, Size-Count},
-            NextState = Module:next_state(State, Var, C),
+            NextState = triq_fsm_stub:next_state(Module, State, Var, C),
             Command = {set, Var, C},
             gen_commands(Module,
                          NextState,
@@ -108,7 +108,7 @@ commands_shrink(Module,SymbolicStates,Domains, Dom, Commands,Tries) ->
 
     StartState =
         if RemIdx == 1 -> hd(SymbolicStates);
-           true -> Module:initial_state()
+           true -> triq_fsm_stub:initial_state(Module)
         end,
 
     case validate(Module,
@@ -140,10 +140,11 @@ validate2(Module,State,[{set,Var,Call}|Commands], KnownVars) ->
     FreeVars = free_vars(Call),
     UnknownVars = FreeVars -- KnownVars,
     (UnknownVars == [])
-        andalso (Module:precondition(State,Call)==true)
+        andalso (triq_fsm_stub:precondition(Module,State,Call)==true)
         andalso begin
-                    NextState = Module:next_state(State, Var, Call),
-                    validate2(Module,NextState, Commands, [Var|KnownVars])
+                    NextState = triq_fsm_stub:next_state(Module, State,
+                                                         Var, Call),
+                    validate2(Module, NextState, Commands, [Var|KnownVars])
                 end.
 
 run_commands(Module,Commands) ->
@@ -154,7 +155,7 @@ run_commands(Module,Commands,Env) ->
                    Env,
                    Module,
                    [],
-                   Module:initial_state()).
+                   triq_fsm_stub:initial_state(Module)).
 
 do_run_command(Commands, Env, Module, History, State) ->
     case Commands of
@@ -175,10 +176,10 @@ do_run_command(Commands, Env, Module, History, State) ->
             SubstCall = {call, M2,F2,A2},
             History2 = [{SubstCall,Res}|History],
 
-            case Module:postcondition(State,SubstCall,Res) of
+            case triq_fsm_stub:postcondition(Module,State,SubstCall,Res) of
                 true ->
                     Env2 = [{V,Res}|proplists:delete(V,Env)],
-                    State2 = Module:next_state(State,Var,SymCall),
+                    State2 = triq_fsm_stub:next_state(Module,State,Var,SymCall),
                     do_run_command(Rest, Env2, Module, History2, State2);
 
                 Other ->
@@ -194,13 +195,13 @@ do_run_command(Commands, Env, Module, History, State) ->
 %% @end
 %%-----------------------------------------------------------------
 state_after(Module,Commands) ->
-    NextState = fun(S,V,C) -> Module:next_state(S,V,C) end,
+    NextState = fun(S,V,C) -> triq_fsm_stub:next_state(Module,S,V,C) end,
     lists:foldl(fun({init,S}, _) ->
                         S;
                    ({set,Var,Call},S) ->
                         NextState(S,Var,Call)
                 end,
-                Module:initial_state(),
+                triq_fsm_stub:initial_state(Module),
                 Commands).
 
 %%-----------------------------------------------------------------
