@@ -34,23 +34,20 @@
 %% FSM API
 
 commands(Module) when is_atom(Module) ->
-    StubModule = triq_fsm_stub:new(Module),
-    triq_statem:commands(StubModule).
+    triq_statem_fsm:commands(Module).
 
 commands(Module, {InitialName, State}=Init) when is_atom(Module) ->
-    StubModule = triq_fsm_stub:new(Module),
-    triq_statem:commands(StubModule, {InitialName, State}).
+    triq_statem_fsm:commands(Module, {InitialName, State}).
 
 run_commands(Module, Commands) ->
     run_commands(Module, Commands, []).
 
 run_commands(Module,Commands,Env) ->
-    StubModule = triq_fsm_stub:new(Module),
     do_run_command(Commands,
                    Env,
-                   StubModule,
+                   Module,
                    [],
-                   StubModule:initial_state()).
+                   triq_fsm_stub:initial_state(Module)).
 
 do_run_command(Commands, Env, Module, History, State) ->
     case Commands of
@@ -72,10 +69,10 @@ do_run_command(Commands, Env, Module, History, State) ->
             {Name, _} = State,
             History2 = [{{Name,SubstCall},Res}|History],
 
-            case Module:postcondition(State,SubstCall,Res) of
+            case triq_fsm_stub:postcondition(Module,State,SubstCall,Res) of
                 true ->
                     Env2 = [{V,Res}|proplists:delete(V,Env)],
-                    State2 = Module:next_state(State,Var,SymCall),
+                    State2 = triq_fsm_stub:next_state(Module,State,Var,SymCall),
                     do_run_command(Rest, Env2, Module, History2, State2);
 
                 Other ->

@@ -74,10 +74,9 @@ rewrite([F | Fs], As, Module, GenQC) ->
     rewrite(Fs, [F | As], Module, GenQC);
 rewrite([], As, Module, GenQC) ->
     {if GenQC ->
-             Triq = {record_field,0,{atom,0,''},{atom,0,triq}},
              [{function,0,?CHECK,0,
                [{clause,0,[],[],
-                 [{call,0,{remote,0,Triq,{atom,0,module}},
+                 [{call,0,{remote,0,{atom,0,triq},{atom,0,test}},
                    [{atom,0,Module}]}]}]}
               | As];
         true ->
