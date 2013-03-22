@@ -25,10 +25,7 @@
          run_commands/3,
          state_names/1]).
 -import(triq_expr,
-        [eval/2,
-         free_vars/1]).
--import(triq_dom,
-        [oneof/1]).
+        [eval/2]).
 
 
 %% FSM API
@@ -36,7 +33,7 @@
 commands(Module) when is_atom(Module) ->
     triq_statem_fsm:commands(Module).
 
-commands(Module, {InitialName, State}=Init) when is_atom(Module) ->
+commands(Module, {InitialName, State}) when is_atom(Module) ->
     triq_statem_fsm:commands(Module, {InitialName, State}).
 
 run_commands(Module, Commands) ->
