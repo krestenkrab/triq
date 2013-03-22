@@ -94,7 +94,7 @@ and have a function added called `check/0` which runs `triq:check/1` on all the 
 
     1> mymodule:check().
 
-A handy addition that I use it to also add an `eunit` test, which tests it:
+A handy addition that I use is to also add an `eunit` test, which tests it:
 
     property_test() -> true == check().
 
