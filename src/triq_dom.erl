@@ -849,18 +849,6 @@ shrink_list_N(#?DOM{}=ElemDom, List, Len, N) ->
                 ++ lists:sublist(List,RemIdx+1,Len)
     end.
 
-%%
-%% simple loop to try N shrinks until value is shrunken.
-%%
-try_shrink(Dom,Val,0) -> { Dom,Val };
-try_shrink(Dom,Val,N) ->
-    case shrink(Dom,Val) of
-        {_,Val} ->
-            io:format("shrink {~p,~p} failed~n", [Dom,Val]),
-            try_shrink(Dom,Val,N-1);
-        Shrunk -> Shrunk
-    end.
-
 
 non_empty(#?DOM{}=Dom) ->
     Dom#?DOM{empty_ok=false}.
