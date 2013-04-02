@@ -1,4 +1,3 @@
-
 # Welcome to Triq -- Trifork QuickCheck for Erlang
 
 Triq (pronounced "Trick Check") is a free alternative to [QuviQ
@@ -7,7 +6,7 @@ eqc](http://www.quviq.com/). Triq's API is modelled closely after
 to QuickCheck.  Notice that QuviQ `eqc` has many features not found in
 `triq`, but it is open source licensed under the Apache license.  For
 instance, `eqc` has features for reporting, management, probably a
-much better shrinking mechanism, and cool C integration, and
+much better shrinking mechanism, cool C integration, and
 professional support.
 
 
