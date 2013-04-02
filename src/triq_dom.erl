@@ -3,7 +3,7 @@
 %%
 %% This file is part of Triq - Trifork QuickCheck
 %%
-%% Copyright (c) 2010 by Trifork
+%% Copyright (c) 2010-2013 by Trifork
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.

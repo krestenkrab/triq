@@ -85,9 +85,7 @@ rewrite([], As, Module, GenQC) ->
      GenQC}.
 
 module_decl(Name, M, Fs, Exports) ->
-    Module = if is_atom(Name) -> Name;
-                true -> list_to_atom(packages:concat(Name))
-             end,
+    Module = Name,
     {Fs1, GenQC} = rewrite(Fs, [], Module, true),
     Es = if GenQC -> [{?CHECK,0} | Exports];
             true -> Exports

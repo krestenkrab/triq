@@ -18,43 +18,53 @@ To use `triq`, you download the latest version from
 into your erlang lib directory (typically
 `/usr/local/lib/erlang/lib`):
 
-<pre>prompt$ cd /usr/local/lib/erlang/lib
+```sh
+prompt$ cd /usr/local/lib/erlang/lib
 propmt$ tar xvzf triq-0.1.0.tgz
-...</pre>
+...
+```
 
 And you're all set.  Next, to use `triq`, include the header file:
 
-<pre>-include_lib("triq/include/triq.hrl").</pre>
+```erlang
+-include_lib("triq/include/triq.hrl").
+```
 
 And you're ready to write property tests.  An example property could be:
 
-<pre>prop_append() ->
+```erlang
+prop_append() ->
     ?FORALL({Xs,Ys},{list(int()),list(int())},
             lists:reverse(Xs++Ys)
             ==
-            lists:reverse(Ys) ++ lists:reverse(Xs)).</pre>
+            lists:reverse(Ys) ++ lists:reverse(Xs)).
+```
 
 To test this property, run `triq:check/1`, thus:
 
-<pre>1> triq:check(prop_append()).
+```erlang
+1> triq:check(prop_append()).
 ......................................................................
 ..............................
 Ran 100 tests
 true
-2> </pre>
+2>
+```
 
 If the test fails, it will try to shrink the result; here is an example:
 
-<pre>prop_delete() ->
+```erlang
+prop_delete() ->
     ?FORALL(L,list(int()),
         ?IMPLIES(L /= [],
             ?FORALL(I,elements(L),
                 ?WHENFAIL(io:format("L=~p, I=~p~n", [L,I]),
                           not lists:member(I,lists:delete(I,L)))))).
-</pre>
+```
 
 Which runs like this:
-<pre>1> triq:check(triq_tests:prop_delete()).
+```erlang
+1> triq:check(triq_tests:prop_delete()).
 x....Failed!
 L=[4,5,5], I=5
 
@@ -63,11 +73,13 @@ Simplified:
         L = [0,0]
         I = 0
 false
-2> </pre>
+2>
+```
 
 You can get the values used for the failing test with `counterexample`,
 and reuse the same test values with `check/2`:
-<pre>3> A = triq:counterexample(triq_tests:xprop_delete()).
+```erlang
+3> A = triq:counterexample(triq_tests:xprop_delete()).
 x.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxFailed!
 L=[3,2,1,1,1], I=1
 
@@ -87,17 +99,21 @@ Simplified:
 	L = [0,0]
 	I = 0
 false
-6> </pre>
+6>
+```
 
 Modules compiled with the `triq.hrl` header, auto-export all functions named `prop_*`,
 and have a function added called `check/0` which runs `triq:check/1` on all the properties in the module.
 
-    1> mymodule:check().
+```erlang
+1> mymodule:check().
+```
 
-A handy addition that I use it to also add an `eunit` test, which tests it:
+A handy addition that I use is to also add an `eunit` test, which tests it:
 
-    property_test() -> true == check().
-
+```erlang
+property_test() -> true == check().
+```
 Which can then automatically be run using your favourite `eunit` runner.
 
 Good luck!
