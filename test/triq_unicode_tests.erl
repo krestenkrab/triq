@@ -36,12 +36,14 @@ equals(X, Y) -> io:format(user, "Are not equal ~p and ~p.", [X,Y]), false.
 %% Call test generators
 %% ------------------------------------------------------------------
 
+%% FIXME: currently fails for 16#11000 aka 10#69632
 prop_unicode_char() ->
-    ?FORALL(Char, unicode_char(),
-            begin
-                %% io:format(user, "~p~n", [Char]),
-                true
-            end).
+    ?FORALL(Char, unicode_char(), is_unicode_char(Char)).
+
+is_unicode_char(C) ->
+    (C >= 0 andalso C =< 16#D7FF)
+        orelse
+          (C >= 16#E000 andalso C =< 16#10FFF).
 
 
 prop_unicode_binary() ->
