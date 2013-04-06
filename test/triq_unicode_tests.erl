@@ -80,7 +80,6 @@ prop_unicode_external_characters() ->
             oneof([{Encoding, unicode_characters(Encoding)}
                    || Encoding <- encoding()]),
             begin
-                List = unicode:characters_to_list(Chars, Encoding),
                 is_binary(unicode:characters_to_binary(Chars, Encoding))
             end).
 
