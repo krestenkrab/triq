@@ -81,8 +81,8 @@
 
 -record(?DOM,
         {kind :: atom() | tuple(),
-         pick   =fun error_pick/2    :: pick_fun(T),
-         shrink =fun error_shrink/2  :: shrink_fun(T),
+         pick = fun error_pick/2 :: pick_fun(T),
+         shrink = fun error_shrink/2 :: shrink_fun(T),
          empty_ok = true :: boolean()
         }).
 
