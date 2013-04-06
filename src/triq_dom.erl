@@ -81,8 +81,8 @@
 
 -record(?DOM,
         {kind :: atom() | tuple(),
-         pick   =fun error_pick/2    :: pick_fun(T),
-         shrink =fun error_shrink/2  :: shrink_fun(T),
+         pick = fun error_pick/2 :: pick_fun(T),
+         shrink = fun error_shrink/2 :: shrink_fun(T),
          empty_ok = true :: boolean()
         }).
 
@@ -847,18 +847,6 @@ shrink_list_N(#?DOM{}=ElemDom, List, Len, N) ->
         {_,SElm} ->
             lists:sublist(List,RemIdx-1) ++ [SElm]
                 ++ lists:sublist(List,RemIdx+1,Len)
-    end.
-
-%%
-%% simple loop to try N shrinks until value is shrunken.
-%%
-try_shrink(Dom,Val,0) -> { Dom,Val };
-try_shrink(Dom,Val,N) ->
-    case shrink(Dom,Val) of
-        {_,Val} ->
-            io:format("shrink {~p,~p} failed~n", [Dom,Val]),
-            try_shrink(Dom,Val,N-1);
-        Shrunk -> Shrunk
     end.
 
 
