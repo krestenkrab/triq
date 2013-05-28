@@ -23,7 +23,15 @@ propmt$ tar xvzf triq-0.1.0.tgz
 ...
 ```
 
-And you're all set.  Next, to use `triq`, include the header file:
+And you're all set. Or, checkout the triq source code and soft link / copy into your Erlang lib directory.
+
+```sh
+prompt$ git clone git://github.com/krestenkrab/triq.git
+prompt$ cd triq
+prompt$ ln -s . /usr/local/lib/erlang/lib/triq-0.1.0
+```
+
+Next, to use `triq`, include the header file:
 
 ```erlang
 -include_lib("triq/include/triq.hrl").
