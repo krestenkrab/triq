@@ -19,7 +19,3 @@ This product includes software covered by the following licenses:
 
    Build Scripts from Erlang Solutions, Ltd. made available
    under the Apache License, Version 2.0.
-
-   auto-exporter parse transformation (src/triq_autoexport.erl) is
-   derived from code by Richard Carlsson licensed under the
-   GNU Lesser General Public License.

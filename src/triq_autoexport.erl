@@ -1,32 +1,21 @@
 %% -*- erlang-indent-level: 4;indent-tabs-mode: nil -*-
 %% ex: ts=4 sw=4 et
 %%
-%% For the purposes of licensing, I will permit myself to regard
-%% this module as a "separate library", because it is not linked
-%% with the resulting executable.  It is linked into the compiler,
-%% as it runs.  As such, a "GNU Lesser General Public License" is
-%% not really a problem; just make sure that you distribute this
-%% source code file along with any binaries.
+%% Licensed under the Apache License, Version 2.0 (the "License");
+%% you may not use this file except in compliance with the License.
+%% You may obtain a copy of the License at
 %%
-%% ----------------
+%%     http://www.apache.org/licenses/LICENSE-2.0
 %%
-%% This library is free software; you can redistribute it and/or modify
-%% it under the terms of the GNU Lesser General Public License as
-%% published by the Free Software Foundation; either version 2 of the
-%% License, or (at your option) any later version.
+%% Unless required by applicable law or agreed to in writing, software
+%% distributed under the License is distributed on an "AS IS" BASIS,
+%% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+%% See the License for the specific language governing permissions and
+%% limitations under the License.
 %%
-%% This library is distributed in the hope that it will be useful, but
-%% WITHOUT ANY WARRANTY; without even the implied warranty of
-%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-%% Lesser General Public License for more details.
-%%
-%% You should have received a copy of the GNU Lesser General Public
-%% License along with this library; if not, write to the Free Software
-%% Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-%% USA
-%%
-%% @author Richard Carlsson <richardc@it.uu.se>
-%% @copyright 2006 Richard Carlsson
+%% @author Richard Carlsson <carlsson.richard@gnail.com>
+%% @author Kresten Krab Thorup <krab@trifork.com>
+%% @copyright 2006-2014 Richard Carlsson
 %% @private
 %% @see triq
 %% @doc Parse transform for automatic exporting of prop_ functions.
