@@ -197,12 +197,7 @@ pick(F,SampleSize) when erlang:is_function(F,0) ->
 %%
 %% Simple values that generate themselves
 %%
-pick(V,_) when is_atom(V);
-               is_number(V);
-               is_binary(V);
-               is_function(V);
-               is_bitstring(V)
-               ->
+pick(V,_) ->
     {V,V}.
 
 
