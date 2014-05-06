@@ -37,11 +37,12 @@ equals(X, Y) -> io:format(user, "Are not equal ~p and ~p.", [X,Y]), false.
 %% ------------------------------------------------------------------
 
 prop_unicode_char() ->
-    ?FORALL(Char, unicode_char(),
-            begin
-                %% io:format(user, "~p~n", [Char]),
-                true
-            end).
+    ?FORALL(Char, unicode_char(), is_unicode_char(Char)).
+
+is_unicode_char(C) ->
+    (C >= 0 andalso C =< 16#D7FF)
+        orelse
+          (C >= 16#E000 andalso C =< 16#10FFFF).
 
 
 prop_unicode_binary() ->
@@ -80,7 +81,6 @@ prop_unicode_external_characters() ->
             oneof([{Encoding, unicode_characters(Encoding)}
                    || Encoding <- encoding()]),
             begin
-                List = unicode:characters_to_list(Chars, Encoding),
                 is_binary(unicode:characters_to_binary(Chars, Encoding))
             end).
 
