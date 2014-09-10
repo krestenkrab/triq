@@ -1063,10 +1063,9 @@ choose_pick(#?DOM{kind=#choose{min=M,max=N}}=Dom, _) ->
     Value = random:uniform(N-M+1) - 1 + M,
     {Dom,Value}.
 
-choose_shrink(#?DOM{kind=#choose{min=M}}=Dom, Value) when Value > M ->
-    {Dom,Value-1};
-choose_shrink(#?DOM{kind=#choose{min=M}}=Dom, M) ->
-    {Dom,M}.
+choose_shrink(#?DOM{kind=#choose{min=M}}=Dom, Value) ->
+    Mid = (Value - M) div 2,
+    {Dom, M + Mid}.
 
 %% @doc Generates a member of the list `L'.  Shrinks towards the first element
 %% of the list.
