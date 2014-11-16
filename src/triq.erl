@@ -327,6 +327,7 @@ check(Property, CounterExample) when is_list(CounterExample) ->
 %% @end
 %%--------------------------------------------------------------------
 check(Property, Counterexample, RunIters) ->
+    generate_randomness(),
     case check_input(fun(nil)->Property end,
                      nil,
                      nil,
@@ -455,3 +456,11 @@ fails(Prop) ->
     {'prop:fails', Prop}.
 numtests(Num,Prop) ->
     {'prop:numtests', Num, Prop}.
+
+%%
+%% 12 crypto-safe random bytes to seed erlang random number generator
+%%
+generate_randomness() ->
+    <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
+    random:seed({A, B, C}),
+    io:format("Seed: ~p~n", [{A, B, C}]).
