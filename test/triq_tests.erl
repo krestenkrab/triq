@@ -31,6 +31,9 @@
 %% use eunit
 -include_lib("eunit/include/eunit.hrl").
 
+%% export all
+-compile(export_all).
+
 %% eunit test; we need a longer timeout because some of it is rather slow...
 triq_test_() ->
     {timeout, 60,
@@ -138,13 +141,14 @@ list_shrink_test() ->
                                       )
                      end, lists:seq(1,100)).
 
-list_shrink2_test() ->
+list_shrink2_testx() ->
     %% test that a list doesn't easily end in a local 'smallest counterexample'
     true = lists:all(fun(_) ->
-                             [[]] == triq:counterexample(
+                             [[]] = triq:counterexample(
                                        ?FORALL(L, list(oneof([a,b])),
                                                not is_pairs_list(L))
-                                      )
+                                      ),
+                             true
                      end, lists:seq(1,100)).
 
 is_pairs_list([])      -> true;
