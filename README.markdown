@@ -1,5 +1,8 @@
 # Welcome to Triq -- Trifork QuickCheck for Erlang
 
+[![Build Status](https://travis-ci.org/krestenkrab/triq.svg?branch=master)](https://travis-ci.org/krestenkrab/triq) 
+
+
 Triq (pronounced "Trick Check") is a free alternative to [QuviQ
 eqc](http://www.quviq.com/). Triq's API is modelled closely after
 `eqc`, so I recommend their tutorials and slides for an introduction
