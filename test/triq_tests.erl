@@ -31,15 +31,6 @@
 %% use eunit
 -include_lib("eunit/include/eunit.hrl").
 
-%% export all
--compile(export_all).
-
-%% eunit test; we need a longer timeout because some of it is rather slow...
-triq_test_() ->
-    {timeout, 60,
-     fun() ->
-             true = triq:module(?MODULE)
-     end}.
 
 boolean_test() ->
     Unique = fun ordsets:from_list/1,
@@ -141,19 +132,19 @@ list_shrink_test() ->
                                       )
                      end, lists:seq(1,100)).
 
-list_shrink2_testx() ->
-    %% test that a list doesn't easily end in a local 'smallest counterexample'
-    true = lists:all(fun(_) ->
-                             [[]] = triq:counterexample(
-                                       ?FORALL(L, list(oneof([a,b])),
-                                               not is_pairs_list(L))
-                                      ),
-                             true
-                     end, lists:seq(1,100)).
-
-is_pairs_list([])      -> true;
-is_pairs_list([X,X|T]) -> is_pairs_list(T);
-is_pairs_list(_)       -> false.
+%list_shrink2_testx() ->
+%    %% test that a list doesn't easily end in a local 'smallest counterexample'
+%    true = lists:all(fun(_) ->
+%                             [[]] = triq:counterexample(
+%                                       ?FORALL(L, list(oneof([a,b])),
+%                                               not is_pairs_list(L))
+%                                      ),
+%                             true
+%                     end, lists:seq(1,100)).
+%
+%is_pairs_list([])      -> true;
+%is_pairs_list([X,X|T]) -> is_pairs_list(T);
+%is_pairs_list(_)       -> false.
 
 oneof_test() ->
     [{X,Y}] = triq:counterexample(
@@ -219,3 +210,18 @@ recheck_test_() ->
 counterexample_test() ->
     Counterexample = triq:counterexample(xprop_delete()),
     ?assertEqual(false, triq:check(xprop_delete(), Counterexample)).
+
+
+%% -------------------------------------------------------------------
+%% Property Testing
+%% -------------------------------------------------------------------
+
+run_property_testing_test_() ->
+    {timeout, 60, fun run_property_testing_case/0}.
+
+run_property_testing_case() ->
+    EunitLeader = erlang:group_leader(),
+    erlang:group_leader(whereis(user), self()),
+    Res = triq:module(?MODULE),
+    erlang:group_leader(EunitLeader, self()),
+    ?assert(Res).
