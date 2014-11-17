@@ -17,7 +17,9 @@
 .PHONY: doc
 
 all:
-	./rebar compile eunit
+	./rebar compile
+
+test: eunit qc
 
 doc:
 	./rebar doc
@@ -27,6 +29,9 @@ clean:
 
 dialyzer:
 	./rebar analyze
+
+eunit:
+	./rebar eunit
 
 qc:
 	./rebar qc
