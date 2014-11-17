@@ -22,6 +22,9 @@
 
 -include("triq.hrl").
 
+%% use eunit
+-include_lib("eunit/include/eunit.hrl").
+
 -compile(export_all).
 
 %%
@@ -81,3 +84,18 @@ next_state(Props, _Var, {call, erlang, erase, [Key]}) ->
     proplists:delete(Key,Props);
 next_state(Props, _Var, {call, erlang, get, [_]}) ->
     Props.
+
+
+%% -------------------------------------------------------------------
+%% Property Testing
+%% -------------------------------------------------------------------
+
+run_property_testing_test_() ->
+    {timeout, 60, fun run_property_testing_case/0}.
+
+run_property_testing_case() ->
+    EunitLeader = erlang:group_leader(),
+    erlang:group_leader(whereis(user), self()),
+    Res = triq:module(?MODULE),
+    erlang:group_leader(EunitLeader, self()),
+    ?assert(Res).
