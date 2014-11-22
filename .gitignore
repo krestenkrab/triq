@@ -10,3 +10,4 @@ doc/stylesheet.css
 *.beam
 *.S
 *.erlx
+.vagrant
