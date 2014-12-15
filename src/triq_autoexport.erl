@@ -65,7 +65,7 @@ rewrite([], As, Module, GenQC) ->
     {if GenQC ->
              [{function,0,?CHECK,0,
                [{clause,0,[],[],
-                 [{call,0,{remote,0,{atom,0,triq},{atom,0,test}},
+                 [{call,0,{remote,0,{atom,0,triq},{atom,0,check}},
                    [{atom,0,Module}]}]}]}
               | As];
         true ->
