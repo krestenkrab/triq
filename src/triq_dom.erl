@@ -585,7 +585,7 @@ int(Min, Max) ->
                     (Dom,0) -> {Dom,0}
                  end,
           pick=fun(Dom,SampleSize) ->
-                       {Dom, random:uniform(max(SampleSize, Diff)) + Min}
+                       {Dom, random:uniform(min(SampleSize, Diff)) + Min}
                end
          }.
 

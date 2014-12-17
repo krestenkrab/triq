@@ -36,6 +36,19 @@ boolean_test() ->
     Unique = fun ordsets:from_list/1,
     ?assertEqual([false, true], Unique(triq_dom:sample(bool()))).
 
+prop_intrange() ->
+    ?FORALL({X,Y},
+            ?SUCHTHAT({XX,YY},
+                      {int(), int()},
+                      XX < YY),
+
+            true = triq:counterexample( prop_intrange(X,Y))).
+
+prop_intrange(X,Y) when X < Y ->
+    ?FORALL(I, int(X,Y),
+            ?WHENFAIL(io:format("Min=~p, Max=~p, I=~p~n", [X,Y,I]),
+                      (I >= X) andalso (I =< Y))).
+
 prop_pos_integer() ->
     ?FORALL(PosInt, pos_integer(), PosInt > 0).
 
