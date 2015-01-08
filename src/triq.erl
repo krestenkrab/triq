@@ -36,6 +36,7 @@
          check/3,
          fails/1,
          module/1,
+         module/2,
          counterexample/0,
          counterexample/1,
          numtests/2]).
@@ -283,12 +284,15 @@ all(Fun,[H|T]) ->
 %% @end
 %%--------------------------------------------------------------------
 module(Module) when is_atom(Module) ->
+    module(Module, 100).
+    
+module(Module, RunIters) when is_integer(RunIters), RunIters>0 ->
     Info = Module:module_info(exports),
     all(fun({Fun,0}) ->
                 case atom_to_list(Fun) of
                     "prop_" ++ _ ->
                         io:format("Testing ~p:~p/0~n", [Module, Fun]),
-                        check(Module:Fun());
+                        check(Module:Fun(), RunIters);
                     _ -> true
                 end;
            ({_,_}) -> true
