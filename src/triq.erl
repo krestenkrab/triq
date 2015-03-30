@@ -34,6 +34,7 @@
 -export([check/1,
          check/2,
          check/3,
+         equals/2,
          fails/1,
          module/1,
          module/2,
@@ -285,7 +286,7 @@ all(Fun,[H|T]) ->
 %%--------------------------------------------------------------------
 module(Module) when is_atom(Module) ->
     module(Module, 100).
-    
+
 module(Module, RunIters) when is_integer(RunIters), RunIters>0 ->
     Info = Module:module_info(exports),
     all(fun({Fun,0}) ->
@@ -446,6 +447,18 @@ shrink_loop(Fun,Input,InputDom,GS,Context,Tested) ->
                     shrink_loop(Fun,Input,InputDom,GS-1,Context,NewTested)
             end
     end.
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Returns true when the arguments are equal.
+%%
+%% @spec equals( term(), term() ) -> boolean()
+%% @end
+%%-------------------------------------------------------------------
+equals(_X, _X) ->
+    true;
+equals(_X, _Y) ->
+    false.
 
 %%--------------------------------------------------------------------
 %% @doc
