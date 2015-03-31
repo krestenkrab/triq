@@ -34,6 +34,7 @@
 -export([check/1,
          check/2,
          check/3,
+         conjunction/1,
          equals/2,
          fails/1,
          module/1,
@@ -106,6 +107,18 @@ check_input(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
                               context=[{"?",Fun,Input,IDom}
                                        |QCT#triq.context]}};
                 _ -> {success, Count+1}
+            end;
+
+        {'prop:conjunction', []} ->
+            {success, Count+1};
+        {'prop:conjunction', [{_Tag, Property}|Properties]} ->
+            case check_input(fun(none)->Property end,none,none,QCT#triq{}) of
+                {success, _} ->
+                    check_input(fun(none)->
+                                        {'prop:conjunction', Properties} end,
+                                none,none,QCT#triq{});
+                Any ->
+                    Any
             end;
 
         {'prop:implies', false, _, _, _} ->
@@ -234,6 +247,7 @@ check_timeout(Fun,Input,IDom,Limit,Fun2,
             end,
 
     Yield.
+
 
 check_forall(N,N,_,_,_,#triq{count=Count}) ->
     {success, Count};
@@ -471,6 +485,19 @@ equals(_X, _Y) ->
 %%--------------------------------------------------------------------
 fails(Prop) ->
     {'prop:fails', Prop}.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% A Property which succeeds when all of the properties passed in are
+%% true.  Note, this method short-circuits on the first failure in the
+%% list and subsequent properties are not tested.
+%%
+%% @spec conjunction( list({atom(), property()}) ) -> property()
+%% @end
+%%--------------------------------------------------------------------
+conjunction(Properties) ->
+    {'prop:conjunction', Properties}.
+
 numtests(Num,Prop) ->
     {'prop:numtests', Num, Prop}.
 
