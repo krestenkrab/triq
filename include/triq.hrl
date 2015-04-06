@@ -18,6 +18,7 @@
 %% limitations under the License.
 %%
 
+-define(LAZY(X), DELAY(X)).
 -define(DELAY(X), fun()->X end).
 -define(FORCE(X), (X)() ).
 -define(DOMAIN_MODULE, triq_dom).
@@ -33,6 +34,8 @@
         {'prop:trapexit', ?DELAY(Property), ??Property}).
 -define(TIMEOUT(Limit,Property),
         {'prop:timeout', Limit, ?DELAY(Property), ??Property}).
+-define(SETUP(SetupFun,Property),
+        {'prop:setup', SetupFun, ?DELAY(Property), ??Property}).
 
 %%
 %% import property functions

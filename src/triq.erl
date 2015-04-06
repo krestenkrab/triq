@@ -94,6 +94,10 @@ check_input(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
         {failure, _, _, _, _}=Fail ->
             Fail;
 
+        {'prop:setup', SetupFun, Property, Body2} ->
+            SetupFun(),
+            check_input(fun(none)->Property() end,none,none,QCT#triq{body=Body2});
+
         {'prop:timeout', Limit, Fun2, Body2} ->
             Yield = check_timeout(Fun,Input,IDom,Limit,Fun2,
                                   QCT#triq{body=Body2}),
