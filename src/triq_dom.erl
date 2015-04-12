@@ -748,6 +748,8 @@ xmin(A,B) when A<B -> A;
 xmin(A,B) when B<A -> B;
 xmin(A,B) when A==B -> A.
 
+%% @doc The domain of atoms
+%% @spec int() -> domain(integer())
 atom_shrink(#?DOM{kind=#atom{size=Size}, empty_ok=EmptyOK}=AtomDom,
             AtomValue) ->
     List = atom_to_list(AtomValue),
