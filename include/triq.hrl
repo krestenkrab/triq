@@ -87,6 +87,8 @@
          vector/2,
          binary/1,
          binary/0,
+         bitstring/0,
+         bitstring/1,
          non_empty/1,
          resize/2,
          non_neg_integer/0,
