@@ -71,6 +71,7 @@
          int/0,
          int/1,
          int/2,
+         largeint/0,
          byte/0,
          real/0,
          sized/1,

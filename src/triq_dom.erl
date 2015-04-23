@@ -39,6 +39,9 @@
 %% how many times we try to shrink a value before we bail out
 -define(SHRINK_LOOPS,100).
 
+%% A number large enough to trigger the Erlang bignum implementation
+-define(BIGNUM, trunc(math:pow(2, 65) * 2)).
+
 %% @type pick_fun(T). Picks members of the `domain(T)'.
 %% Return pair of `{domain(T),T}'; the "output domain" is what will
 %% be used for shrinking the value.
@@ -111,6 +114,7 @@
          int/0,
          int/1,
          int/2,
+         largeint/0,
          byte/0,
          real/0,
          sized/1,
@@ -623,6 +627,32 @@ pos_integer() ->
                end,
         pick=fun(Dom,SampleSize) ->
                      {Dom, abs(random:uniform(SampleSize)) + 1}
+             end
+       }.
+
+%% @doc The domain of "big" integers.
+%%
+%% Note, this is sized to ensure it remains a big integer, even on 64
+%% bit implementations.
+%% @spec largeint() -> domrec(largeint()).
+largeint() ->
+    #?DOM{
+        kind=largeint,
+        shrink=fun(Dom,Val) when Val>1 -> {Dom,Val / 10};
+                  (Dom,Val) when Val<1 -> {Dom,Val / 10};
+                  (Dom,_) -> {Dom,0}
+               end,
+        pick=fun(Dom,SampleSize) ->
+                     {Dom,
+                      ?BIGNUM
+                      * SampleSize * random:uniform()
+                      * case random:uniform(2) of
+                            2 ->
+                                -1;
+                            1 ->
+                                1
+                        end
+                      }
              end
        }.
 
