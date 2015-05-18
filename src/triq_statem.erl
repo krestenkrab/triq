@@ -42,6 +42,19 @@
          command_names/1,
          zip/2]).
 
+-type state() :: term().
+-type command() :: {call, atom(), atom(), [_]}.
+-callback(initial_state() ->
+                  state()).
+-callback(command(state()) ->
+                command()).
+-callback(precondition(state(),command()) ->
+                 boolean()).
+-callback(postcondition(state(),command(), term()) ->
+                 boolean()).
+-callback(next_state(state(),term(), command()) ->
+                 term()).
+
 
 commands(Module) ->
     domain(commands,
