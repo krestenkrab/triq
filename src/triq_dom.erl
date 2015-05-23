@@ -107,61 +107,15 @@
 -record(seal,{dom,seed}).
 -record(unicode_binary, {size, encoding = utf8}).
 
-
-%% generators
--export([list/1,
-         tuple/1,
-         int/0,
-         int/1,
-         int/2,
-         largeint/0,
-         byte/0,
-         real/0,
-         sized/1,
-         elements/1,
-         any/0,
-         atom/0,
-         atom/1,
-         choose/2,
-         oneof/1,
-         frequency/1,
-         bool/0,
-         char/0,
-         return/1,
-         vector/2,
-         binary/1,
-         binary/0,
-         bitstring/0,
-         bitstring/1,
-         non_empty/1,
-         resize/2,
-         non_neg_integer/0,
-         pos_integer/0]).
-
-%% Unicode
--export([unicode_char/0,
-         unicode_string/0,
-         unicode_string/1,
-         unicode_binary/0,
-         unicode_binary/1,
-         unicode_binary/2,
-         unicode_characters/0,
-         unicode_characters/1]).
-
-%% using a generator
--export([bind/2,
-         bindshrink/2,
-         suchthat/2,
-         pick/2,
-         shrink/2,
-         sample/1,
-         sampleshrink/1,
-         seal/1,
-         open/1,
-         peek/1,
-         domain/3,
-         shrink_without_duplicates/1]).
-
+%%
+%% We want the list of exports in one place, not two.  To prevent a
+%% circular reference, we remove this list to a separate file, and
+%% reference it as an export here and as an import in triq.hrl itself.
+%%
+-include_lib("include/triq_dom.hrl").
+-export(?TRIQ_DOM_EXPORTS).
+-export(?TRIQ_DOM_UNICODE_EXPORTS).
+-export(?TRIQ_DOM_GENERATOR_EXPORTS).
 
 %%
 %% Default values for pic/shrink in ?DOM records
