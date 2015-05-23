@@ -181,7 +181,7 @@ do_run_command(Commands, Env, Module, History, State) ->
         [{init,S}|Rest] ->
             do_run_command(Rest, Env, Module, History, S);
 
-        [{set, {var,V}=Var, {call,M,F,A}=SymCall}|Rest] ->
+        [{set, {var,V}=_Var, {call,M,F,A}=SymCall}|Rest] ->
             M2=eval(Env,M),
             F2=eval(Env,F),
             A2=eval(Env,A),
