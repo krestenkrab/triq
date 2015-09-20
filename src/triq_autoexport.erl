@@ -1,6 +1,10 @@
 %% -*- erlang-indent-level: 4;indent-tabs-mode: nil -*-
 %% ex: ts=4 sw=4 et
 %%
+%% This file is part of Triq - Trifork QuickCheck
+%%
+%% Copyright the Triq Contributors (c.f. AUTHORS)
+%%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
 %% You may obtain a copy of the License at
@@ -13,9 +17,6 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
-%% @author Richard Carlsson <carlsson.richard@gnail.com>
-%% @author Kresten Krab Thorup <krab@trifork.com>
-%% @copyright 2006-2014 Richard Carlsson
 %% @private
 %% @see triq
 %% @doc Parse transform for automatic exporting of prop_ functions.

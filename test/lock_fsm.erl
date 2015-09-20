@@ -3,7 +3,7 @@
 %%
 %% This file is part of Triq - Trifork QuickCheck
 %%
-%% Copyright (c) 2013 Tuncer Ayaz
+%% Copyright the Triq Contributors (c.f. AUTHORS)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -16,10 +16,6 @@
 %% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
-%%
-%%
-%% Trivial gen_fsm based on example from gen_fsm Users' Guide
-%% http://www.erlang.org/doc/design_principles/fsm.html
 %%
 
 -module(lock_fsm).
