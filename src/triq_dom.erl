@@ -1156,8 +1156,9 @@ shrink_without_duplicates_loop(Dom,Val,Tested,Tries) ->
 
 
 %%--------------------------------------------------------------------
-%% @doc
-%% Generate a sample of output values from a generator.
+%% @doc Generate a sample of output values from a generator.
+%% This should not be used except for REPL testing purposes; it will
+%% only ever generate fairly small-valued samples.
 %%
 %% @spec sample( domain(T) ) -> [T]
 %% @end
