@@ -42,7 +42,7 @@
 -export([locked/1,
          unlocked/1]).
 
--include("triq.hrl").
+-include_lib("triq/include/triq.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 -define(TIMEOUT, 1000).

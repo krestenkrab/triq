@@ -26,7 +26,7 @@
 -module(triq_tests).
 
 %% including this also auto-exports all properties
--include("triq.hrl").
+-include_lib("triq/include/triq.hrl").
 
 %% use eunit
 -include_lib("eunit/include/eunit.hrl").
