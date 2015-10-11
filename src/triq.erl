@@ -49,8 +49,7 @@
 
 -record(triq, {count=0,
                context=[],
-               size=?TEST_COUNT,  %% todo: remove this
-               run_iter=?TEST_COUNT,
+               size=?TEST_COUNT,
                report= fun report_none/2,
                shrinking= false,
                result=undefined,
@@ -134,7 +133,7 @@ check_input(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 
         {'prop:numtests', Iters, Property} ->
             check_input(fun(none)->Property end,none,none,
-                        QCT#triq{ run_iter=Iters });
+                        QCT#triq{size=Iters});
 
         {'prop:whenfail', Action, Fun2, Body2} ->
             case check_input(fun(none)->Fun2()end,none,none,
@@ -177,7 +176,7 @@ check_input(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
             end;
 
         {'prop:forall', Dom2, Syntax2, Fun2, Body2} ->
-            check_forall(0, QCT#triq.run_iter, Dom2, Fun2, Syntax2,
+            check_forall(0, QCT#triq.size, Dom2, Fun2, Syntax2,
                          QCT#triq{body=Body2});
 
         Any ->
@@ -354,7 +353,7 @@ check(Property, Counterexample, RunIters) ->
     case check_input(fun(nil)->Property end,
                      nil,
                      nil,
-                     #triq{report=fun report/2, run_iter=RunIters,
+                     #triq{report=fun report/2, size=RunIters,
                            values=Counterexample}) of
 
         {failure, Fun, Input, InputDom, #triq{count=Count,context=Ctx,
