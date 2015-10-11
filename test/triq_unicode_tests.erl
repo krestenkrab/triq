@@ -24,7 +24,7 @@
 %% Tests
 %% ------------------------------------------------------------------
 
--include_lib("triq/include/triq.hrl").
+-include("include/triq.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 equals(X, X) -> true;
