@@ -13,25 +13,11 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 ##==============================================================================
+include erlang.mk
 
-.PHONY: doc
+PROJECT = triq
+PROJECT_DESCRIPTION = A liberally licenced QuickCheck implementation for Erlang
+PROJECT_VERSION = 0.2.0
 
-all:
-	./rebar compile
-
-test: eunit qc
-
-doc:
-	./rebar doc
-
-clean:
-	./rebar clean
-
-dialyzer:
-	./rebar analyze
-
-eunit:
-	./rebar eunit
-
-qc:
-	./rebar qc
+COMPILE_FIRST = triq_autoexport
+ERLC_OPTS += +warnings_as_errors
