@@ -112,7 +112,7 @@
 %% circular reference, we remove this list to a separate file, and
 %% reference it as an export here and as an import in triq.hrl itself.
 %%
--include_lib("triq/include/triq_dom.hrl").
+-include("include/triq_dom.hrl").
 -export(?TRIQ_DOM_EXPORTS).
 -export(?TRIQ_DOM_UNICODE_EXPORTS).
 -export(?TRIQ_DOM_GENERATOR_EXPORTS).
