@@ -284,7 +284,7 @@ all(Fun,[H|T]) ->
 %% @end
 %%--------------------------------------------------------------------
 module(Module) when is_atom(Module) ->
-    module(Module, 100).
+    module(Module, ?TEST_COUNT).
     
 module(Module, RunIters) when is_integer(RunIters), RunIters>0 ->
     Info = Module:module_info(exports),
@@ -314,8 +314,8 @@ check(Module) when is_atom(Module)->
 check(Property) ->
     check(Property, [], ?TEST_COUNT).
 
-check(Module, _RunIters) when is_atom(Module) ->
-    module(Module);
+check(Module, RunIters) when is_atom(Module), RunIters>0 ->
+    module(Module, RunIters);
 check(Property, RunIters) when is_integer(RunIters), RunIters>0 ->
     check(Property, [], RunIters);
 check(Property, CounterExample) when is_list(CounterExample) ->
