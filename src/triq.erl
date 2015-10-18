@@ -314,7 +314,7 @@ check(Module) when is_atom(Module)->
 check(Property) ->
     check(Property, [], ?TEST_COUNT).
 
-check(Module, RunIters) when is_atom(Module), RunIters>0 ->
+check(Module, RunIters) when is_atom(Module), is_integer(RunIters), RunIters>0 ->
     module(Module, RunIters);
 check(Property, RunIters) when is_integer(RunIters), RunIters>0 ->
     check(Property, [], RunIters);
