@@ -29,13 +29,20 @@
 -define(CHECK,check).
 
 parse_transform(Forms, Options) ->
+%    io:format("FORMS ~n~p~n", [Forms]),
     PropPrefix = proplists:get_value(triq_prop_prefix, Options,
                                      ?DEFAULT_PROP_PREFIX),
     F = fun (Form, Set) ->
                 t_form(Form, Set, PropPrefix)
         end,
     Exports = sets:to_list(lists:foldl(F, sets:new(), Forms)),
-    t_rewrite(Forms, Exports).
+    EUnitGen = fun (Form, Set) ->
+                       t_eunit_form(Form, Set, PropPrefix)
+               end,
+    Eunit = sets:to_list(lists:foldl(EUnitGen, sets:new(), Forms)),
+    Forms1 = t_rewrite(Forms, Exports),
+    add_eunit(Forms1, Eunit).
+
 
 t_form({function, _L, Name, 0, _Cs}, S, PropPrefix) ->
     N = atom_to_list(Name),
@@ -46,6 +53,93 @@ t_form({function, _L, Name, 0, _Cs}, S, PropPrefix) ->
             S
     end;
 t_form(_, S, _) ->
+    S.
+
+
+assertion(Name, Line) ->
+
+    TestName = list_to_atom(string:substr(Name, 6) ++"_test_"),
+
+    {function,Line,TestName,0,
+     [{clause,Line,[],[],
+       [{tuple,Line,
+         [{atom,Line,timeout},
+          {integer,Line,3600},
+          {tuple,Line,
+           [{integer,Line,Line},
+            {'fun',Line,
+             {clauses,
+              [{clause,Line,[],[],
+                [{block,Line,
+                  [{call,Line,
+                    {'fun',Line,
+                     {clauses,
+                      [{clause,Line,[],[],
+                        [{'case',Line,
+                          {call,Line,
+                           {remote,Line,{atom,Line,triq},{atom,Line,check}},
+                           [{call,Line,{atom,Line,list_to_atom(Name)},[]}]},
+                          [{clause,Line,[{atom,Line,true}],[],[{atom,Line,ok}]},
+                           {clause,Line,
+                            [{var,Line,'__V'}],
+                            [],
+                            [{call,Line,
+                              {remote,Line,{atom,Line,erlang},{atom,Line,error}},
+                              [{tuple,Line,
+                                [{atom,Line,assertion_failed},
+                                 {cons,Line,
+                                  {tuple,Line,
+                                   [{atom,Line,module},{atom,Line,mutations}]},
+                                  {cons,Line,
+                                   {tuple,Line,
+                                    [{atom,Line,line},{integer,Line,Line}]},
+                                   {cons,Line,
+                                    {tuple,Line,
+                                     [{atom,Line,expression},
+                                      {string,Line,
+                                       "triq : check ( "++Name++" ( ) )"}]},
+                                    {cons,Line,
+                                     {tuple,Line,
+                                      [{atom,Line,expected},{atom,Line,true}]},
+                                     {cons,Line,
+                                      {tuple,Line,
+                                       [{atom,Line,value},
+                                        {'case',Line,
+                                         {var,Line,'__V'},
+                                         [{clause,Line,
+                                           [{atom,Line,false}],
+                                           [],
+                                           [{var,Line,'__V'}]},
+                                          {clause,Line,
+                                           [{var,Line,'_'}],
+                                           [],
+                                           [{tuple,Line,
+                                             [{atom,Line,not_a_boolean},
+                                              {var,Line,'__V'}]}]}]}]},
+                                      {nil,Line}}}}}}]}]}]}]}]}]}},
+                    []}]}]}]}}]}]}]}]}.
+
+add_eunit([Form| []], Eunit) ->
+   
+    [Form|Eunit];
+add_eunit([Form|Rest], Eunit) ->
+
+    [Form|add_eunit(Rest,Eunit)];
+add_eunit([],_Eunit ) ->
+    [].
+
+
+t_eunit_form({function, L, Name, 0, _Cs}, S, PropPrefix) ->
+    N = atom_to_list(Name) ,
+    case lists:prefix(PropPrefix, N) of
+        true ->
+            Assertion = assertion(N, L),
+            
+            sets:add_element(Assertion, S);
+        false ->
+            S
+    end;
+t_eunit_form(_, S, _) ->
     S.
 
 t_rewrite([{attribute,_,module,{Name,_Ps}}=M | Fs], Exports) ->
