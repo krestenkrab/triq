@@ -2,7 +2,8 @@
 %% application.
 {application, triq,
   [{description, "Trifork QuickCheck"},
-   {vsn, "0.1.0"},
+   {modules, []},
+   {vsn, "0.2.0"},
    {registered,[]},
    {applications, [kernel,stdlib]},
    {build_dependencies, []},

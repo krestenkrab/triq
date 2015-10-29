@@ -3,7 +3,7 @@
 %%
 %% This file is part of Triq - Trifork QuickCheck
 %%
-%% Copyright (c) 2010 by Trifork
+%% Copyright the Triq Contributors (c.f. AUTHORS)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 %% limitations under the License.
 %%
 
+-define(LAZY(X), DELAY(X)).
 -define(DELAY(X), fun()->X end).
 -define(FORCE(X), (X)() ).
 -define(DOMAIN_MODULE, triq_dom).
@@ -33,6 +34,8 @@
         {'prop:trapexit', ?DELAY(Property), ??Property}).
 -define(TIMEOUT(Limit,Property),
         {'prop:timeout', Limit, ?DELAY(Property), ??Property}).
+-define(SETUP(SetupFun,Property),
+        {'prop:setup', SetupFun, ?DELAY(Property), ??Property}).
 
 %%
 %% import property functions
@@ -62,6 +65,7 @@
 %%
 %% import domain functions (a.k.a. generators)
 %%
+<<<<<<< HEAD
 -import(?DOMAIN_MODULE,
         [list/1,
          tuple/1,
@@ -113,6 +117,12 @@
          peek/1,
          domain/3,
          shrink_without_duplicates/1]).
+=======
+-include("triq_dom.hrl").
+-import(?DOMAIN_MODULE, ?TRIQ_DOM_EXPORTS).
+-import(?DOMAIN_MODULE, ?TRIQ_DOM_UNICODE_EXPORTS).
+-import(?DOMAIN_MODULE, ?TRIQ_DOM_GENERATOR_EXPORTS).
+>>>>>>> 674231627a7b87a9cf88d5bc5d47b37fd60d2aa0
 
 %%
 %% Enabling this (the default) does two things (similar to eunit).

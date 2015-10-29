@@ -1,6 +1,7 @@
 # Welcome to Triq -- Trifork QuickCheck for Erlang
 
-[![Build Status](https://travis-ci.org/krestenkrab/triq.svg?branch=master)](https://travis-ci.org/krestenkrab/triq) 
+
+[![Build Status](https://travis-ci.org/open-triq/triq.svg?branch=master)](https://travis-ci.org/open-triq/triq) 
 
 This is a fork of Triq that is being run under the ZeroMQ Collaberation rules, http://rfc.zeromq.org/spec:22 with the one exception being that it is under the apache licence 
 
@@ -19,7 +20,7 @@ professional support.
 ## Installation
 
 To use `triq`, you download the latest version from
-[here](http://github.com/krestenkrab/triq/downloads), and untar it
+[here](http://github.com/open-triq/triq/), and untar it
 into your erlang lib directory (typically
 `/usr/local/lib/erlang/lib`):
 
@@ -34,7 +35,7 @@ And you're all set.
 Or, checkout the triq source code and soft link / copy into your Erlang lib directory:
 
 ```sh
-prompt$ git clone git://github.com/krestenkrab/triq.git
+prompt$ git clone git://github.com/open-triq/triq.git
 prompt$ cd triq
 prompt$ ln -s . /usr/local/lib/erlang/lib/triq-0.1.0
 ```
@@ -132,3 +133,20 @@ property_test() -> true == check().
 Which can then automatically be run using your favourite `eunit` runner.
 
 Good luck!
+
+This repository is copyright by Triq Contributors (as enumerated in
+ AUTHORS).  It is licensed under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance with the
+ License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+       or in the file LICENSE
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied.  See the License for the specific language governing
+permissions and limitations under the License.
+
+This repository also includes build scripts from Erlang Solutions,
+Ltd. made available under the Apache License, Version 2.0.

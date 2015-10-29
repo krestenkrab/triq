@@ -1,5 +1,5 @@
 ##==============================================================================
-## Copyright 2010 Trifork A/S
+## Copyright Triq Contributors
 ##
 ## Licensed under the Apache License, Version 2.0 (the "License");
 ## you may not use this file except in compliance with the License.
@@ -13,8 +13,12 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 ##==============================================================================
+include erlang.mk
 
-.PHONY: doc
+PROJECT = triq
+PROJECT_DESCRIPTION = A liberally licenced QuickCheck implementation for Erlang
+PROJECT_VERSION = 0.2.0
+
 
 all: compile
 compile: 
@@ -36,3 +40,7 @@ eunit:  compile
 
 qc: compile
 	./rebar qc
+
+COMPILE_FIRST = triq_autoexport
+ERLC_OPTS += +warnings_as_errors
+

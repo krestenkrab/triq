@@ -3,7 +3,7 @@
 %%
 %% This file is part of Triq - Trifork QuickCheck
 %%
-%% Copyright (c) 2010-2013 by Trifork
+%% Copyright the Triq Contributors (c.f. AUTHORS)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -38,6 +38,9 @@
 
 %% how many times we try to shrink a value before we bail out
 -define(SHRINK_LOOPS,100).
+
+%% A number large enough to trigger the Erlang bignum implementation
+-define(BIGNUM, trunc(math:pow(2, 65) * 2)).
 
 %% @type pick_fun(T). Picks members of the `domain(T)'.
 %% Return pair of `{domain(T),T}'; the "output domain" is what will
@@ -91,6 +94,7 @@
 -record(tuple, {elem}).
 -record(vector,{size, elem}).
 -record(binary,{size}).
+-record(bitstring,{size}).
 -record(atom,  {size}).
 -record(oneof, {size, elems=[]}).
 -record(resize,{size, dom}).
@@ -103,6 +107,7 @@
 -record(seal,{dom,seed}).
 -record(unicode_binary, {size, encoding = utf8}).
 
+<<<<<<< HEAD
 
 %% generators
 -export([list/1,
@@ -156,6 +161,17 @@
          domain/3,
          shrink_without_duplicates/1]).
 
+=======
+%%
+%% We want the list of exports in one place, not two.  To prevent a
+%% circular reference, we remove this list to a separate file, and
+%% reference it as an export here and as an import in triq.hrl itself.
+%%
+-include("include/triq_dom.hrl").
+-export(?TRIQ_DOM_EXPORTS).
+-export(?TRIQ_DOM_UNICODE_EXPORTS).
+-export(?TRIQ_DOM_GENERATOR_EXPORTS).
+>>>>>>> 674231627a7b87a9cf88d5bc5d47b37fd60d2aa0
 
 %%
 %% Default values for pic/shrink in ?DOM records
@@ -624,6 +640,32 @@ pos_integer() ->
              end
        }.
 
+%% @doc The domain of "big" integers.
+%%
+%% Note, this is sized to ensure it remains a big integer, even on 64
+%% bit implementations.
+%% @spec largeint() -> domrec(largeint()).
+largeint() ->
+    #?DOM{
+        kind=largeint,
+        shrink=fun(Dom,Val) when Val>1 -> {Dom,Val / 10};
+                  (Dom,Val) when Val<1 -> {Dom,Val / 10};
+                  (Dom,_) -> {Dom,0}
+               end,
+        pick=fun(Dom,SampleSize) ->
+                     {Dom,
+                      ?BIGNUM
+                      * SampleSize * random:uniform()
+                      * case random:uniform(2) of
+                            2 ->
+                                -1;
+                            1 ->
+                                1
+                        end
+                      }
+             end
+       }.
+
 
 -spec(float() ->domrec(float())).
 float() ->
@@ -716,7 +758,52 @@ binary_shrink(#?DOM{kind=#binary{size=Size}, empty_ok=EmptyOK}=BinDom,
         NewList -> {BinDom, list_to_binary(NewList)}
     end.
 
+%% @doc The domain of bitstrings
+%% @spec bitstring() -> domain(bitstring())
+-spec bitstring() -> domrec(bitstring()).
+bitstring() ->
+    #?DOM{kind=#bitstring{size=any},
+          pick=fun bitstring_pick/2,
+          shrink=fun bitstring_shrink/2}.
 
+-spec bitstring(Size::non_neg_integer()) -> domrec(bitstring()).
+bitstring(Size) ->
+    #?DOM{kind=#bitstring{size=Size},
+          pick=fun bitstring_pick/2,
+          shrink=fun bitstring_shrink/2}.
+
+bitstring_pick(#?DOM{kind=#bitstring{size=Size}, empty_ok=EmptyOK}=BinDom,
+            SampleSize) ->
+    Sz = case Size of
+             any ->
+                 case EmptyOK of
+                     true ->
+                         random:uniform(SampleSize)-1;
+                     false ->
+                         random:uniform(SampleSize)
+                 end;
+             Size ->
+                 Size
+         end,
+    BinValue = list_to_bitstring(foldn(fun(T) ->
+                                               Int = random:uniform(256) - 1,
+                                               Bit = random:uniform(8),
+                                               [<<Int:Bit>> | T]
+                                       end, [], Sz)),
+    {BinDom, BinValue}.
+
+bitstring_shrink(#?DOM{kind=#bitstring{size=Size}, empty_ok=EmptyOK}=BinDom,
+                 BinValue) ->
+    List = bitstring_to_list(BinValue),
+    Length = byte_size(BinValue),
+    AllowSmaller = allow_smaller(Length,Size,EmptyOK),
+    case shrink_list_with_elemdom(int(), List, Length, AllowSmaller) of
+        List -> {BinDom, BinValue};
+        NewList -> {BinDom, list_to_bitstring(NewList)}
+    end.
+
+%% @doc The domain of atoms
+%% @spec int() -> domain(integer())
 -spec atom() -> domrec(atom()).
 atom() ->
     #?DOM{kind=#atom{size=any},
@@ -1128,8 +1215,9 @@ shrink_without_duplicates_loop(Dom,Val,Tested,Tries) ->
 
 
 %%--------------------------------------------------------------------
-%% @doc
-%% Generate a sample of output values from a generator.
+%% @doc Generate a sample of output values from a generator.
+%% This should not be used except for REPL testing purposes; it will
+%% only ever generate fairly small-valued samples.
 %%
 %% @spec sample( domain(T) ) -> [T]
 %% @end
