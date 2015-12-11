@@ -89,6 +89,7 @@
 
 -record(list,  {elem}).
 -record(tuple, {elem}).
+-record(map,   {size}).
 -record(vector,{size, elem}).
 -record(binary,{size}).
 -record(atom,  {size}).
@@ -107,6 +108,7 @@
 %% generators
 -export([list/1,
          tuple/1,
+         map/0,
          int/0,
          int/1,
          int/2,
@@ -128,6 +130,7 @@
          binary/0,
          non_empty/1,
          resize/2,
+         arbitrary_term/1,
          non_neg_integer/0,
          pos_integer/0]).
 
@@ -501,6 +504,25 @@ markov_prune_list([H|T], TrueTreshold, FalseTreshold, Prev) ->
     if Include -> [H|NewTail];
        true    -> NewTail
     end.
+
+%%
+%% Generator for maps
+%%
+-spec map() -> domrec(map()).
+map() -> 
+    #?DOM{kind=#map{},
+          pick=fun map_pick/2}.
+
+map_pick(#?DOM{kind=#map{}}, SampleSize) ->
+    NewMap = foldn(
+      fun(A) ->
+          {_Dom1, KeyVal} = pick(arbitrary_term(0), 2), % TODO: why does 1 not work for samplesize
+          {_Dom2, ValVal} = pick(arbitrary_term(0), 2),
+          maps:put(KeyVal, ValVal, A)
+      end,
+      #{},
+      SampleSize),
+    { #map{}, NewMap }.
 
 %%
 %% Generator for tuples
@@ -1430,3 +1452,29 @@ unicode_characters1(Size, Encoding) ->
     Chars = ?DELAY(resize(Size, unicode_characters(Encoding))),
     %% TODO: Unicode characters can be of type `maybe_improper_list()'.
     list(frequency([{10,unicode_char()}, {1, Chars}])).
+
+arbitrary_term(0) -> 
+    frequency([{1, []},
+			  {1, {}},
+			  {1, map()},
+			  {1, int()},
+			  {1, byte()},
+			  {1, real()},
+			  {1, atom()},
+			  {1, bool()},
+			  {1, char()},
+			  {1, binary()}
+			 ]);
+arbitrary_term(Depth) ->
+    frequency([{1, list(arbitrary_term(Depth-1))},
+			  {1, tuple(arbitrary_term(Depth-1))},
+			  {1, map()},
+			  {1, int()},
+			  {1, byte()},
+			  {1, real()},
+			  {1, atom()},
+			  {1, bool()},
+			  {1, char()},
+			  {1, binary()}
+			 ]).
+
