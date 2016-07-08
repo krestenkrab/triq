@@ -112,11 +112,11 @@ commands_shrink(Module,SymbolicStates,Domains, Dom, Commands,Tries) ->
     true = (Len > 0),
 
     %% choose a segment of commands to delete...
-    RemIdx = random:uniform(Len),
+    RemIdx = rand:uniform(Len),
     RemLen = if RemIdx==Len ->
                      0;
                 true ->
-                     random:uniform(?MIN(5, Len-RemIdx))
+                     rand:uniform(?MIN(5, Len-RemIdx))
              end,
 
     NewCommands = without(RemIdx,RemLen,Commands),
