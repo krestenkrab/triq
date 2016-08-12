@@ -11,3 +11,4 @@ doc/stylesheet.css
 *.S
 *.erlx
 .vagrant
+.rebar
