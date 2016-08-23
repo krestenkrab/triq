@@ -112,6 +112,7 @@
          int/2,
          byte/0,
          real/0,
+         float/0,
          sized/1,
          elements/1,
          any/0,
@@ -624,6 +625,9 @@ pos_integer() ->
        }.
 
 
+-spec(float() ->domrec(float())).
+float() ->
+    real().
 %% @doc The domain of floats.
 %% @spec real() -> domain(float())
 -spec real() -> domrec(float()).

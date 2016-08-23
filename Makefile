@@ -16,7 +16,8 @@
 
 .PHONY: doc
 
-all:
+all: compile
+compile: 
 	./rebar compile
 
 test: eunit qc
@@ -30,8 +31,8 @@ clean:
 dialyzer:
 	./rebar analyze
 
-eunit:
+eunit:  compile
 	./rebar eunit
 
-qc:
+qc: compile
 	./rebar qc

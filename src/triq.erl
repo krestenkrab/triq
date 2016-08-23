@@ -34,6 +34,9 @@
 -export([check/1,
          check/2,
          check/3,
+         quickcheck/1,
+         quickcheck/2,
+         quickcheck/3,
          fails/1,
          module/1,
          module/2,
@@ -306,6 +309,24 @@ module(Module, RunIters) when is_integer(RunIters), RunIters>0 ->
         end,
         Info).
 
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Run QuickCheck.  If argument is an atom, it runs triq:module/1
+%% checking all the properties in said module; otherwise if the
+%% argument is a property, it runs QuickCheck on said property.
+%%
+%% @spec quickcheck( atom() | property() ) -> any()
+%% @end
+%%--------------------------------------------------------------------
+quickcheck(Target) ->
+    check(Target).
+
+quickcheck(Target, Params) ->
+    check(Target, Params).
+
+quickcheck(Property, Counterexample, RunIters) ->
+    check(Property, Counterexample, RunIters).
 
 %%--------------------------------------------------------------------
 %% @doc

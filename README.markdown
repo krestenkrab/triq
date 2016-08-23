@@ -2,6 +2,9 @@
 
 [![Build Status](https://travis-ci.org/krestenkrab/triq.svg?branch=master)](https://travis-ci.org/krestenkrab/triq) 
 
+This is a fork of Triq that is being run under the ZeroMQ Collaberation rules, http://rfc.zeromq.org/spec:22 with the one exception being that it is under the apache licence 
+
+
 
 Triq (pronounced "Trick Check") is a free alternative to [QuviQ
 eqc](http://www.quviq.com/). Triq's API is modelled closely after
@@ -124,7 +127,7 @@ and have a function added called `check/0` which runs `triq:check/1` on all the 
 A handy addition that I use is to also add an `eunit` test, which tests it:
 
 ```erlang
-property_test() -> true == check().
+property_test() -> true = check().
 ```
 Which can then automatically be run using your favourite `eunit` runner.
 
