@@ -34,14 +34,11 @@
 -export([check/1,
          check/2,
          check/3,
-<<<<<<< HEAD
          quickcheck/1,
          quickcheck/2,
          quickcheck/3,
-=======
          conjunction/1,
          equals/2,
->>>>>>> 674231627a7b87a9cf88d5bc5d47b37fd60d2aa0
          fails/1,
          module/1,
          module/2,
@@ -61,6 +58,13 @@
                result=undefined,
                body,
                values=[]}).
+
+-on_load(load_rand_module/0).
+
+%% Make sure triq_rnd module is generated, compiled, and loaded
+load_rand_module() ->
+    {ok, triq_rnd} = triq_rand_compat:init("triq_rnd"),
+    ok.
 
 %%
 %% Default reporting function, ... is silent
@@ -308,8 +312,13 @@ all(Fun,[H|T]) ->
 %% @end
 %%--------------------------------------------------------------------
 module(Module) when is_atom(Module) ->
+<<<<<<< HEAD
     module(Module, 100).
 
+=======
+    module(Module, ?TEST_COUNT).
+
+>>>>>>> 810eed84f66cc2596cf26ce731beed34ae3ed977
 module(Module, RunIters) when is_integer(RunIters), RunIters>0 ->
     Info = Module:module_info(exports),
     all(fun({Fun,0}) ->
@@ -356,8 +365,8 @@ check(Module) when is_atom(Module)->
 check(Property) ->
     check(Property, [], ?TEST_COUNT).
 
-check(Module, _RunIters) when is_atom(Module) ->
-    module(Module);
+check(Module, RunIters) when is_atom(Module), is_integer(RunIters), RunIters>0 ->
+    module(Module, RunIters);
 check(Property, RunIters) when is_integer(RunIters), RunIters>0 ->
     check(Property, [], RunIters);
 check(Property, CounterExample) when is_list(CounterExample) ->
@@ -531,6 +540,11 @@ numtests(Num,Prop) ->
 %%
 %% 12 crypto-safe random bytes to seed erlang random number generator
 %%
+-ifdef(HAVE_CRYPTO_STRONG_RAND_BYTES).
+-define(crypto_rand_bytes(N), crypto:strong_rand_bytes(N)).
+-else.
+-define(crypto_rand_bytes(N), crypto:rand_bytes(N)).
+-endif.
 generate_randomness() ->
-    <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
-    random:seed({A, B, C}).
+    <<A:32, B:32, C:32>> = ?crypto_rand_bytes(12),
+    triq_rnd:seed({A, B, C}).

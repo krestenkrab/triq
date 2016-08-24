@@ -13,34 +13,32 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 ##==============================================================================
-include erlang.mk
+#include erlang.mk
 
 PROJECT = triq
 PROJECT_DESCRIPTION = A liberally licenced QuickCheck implementation for Erlang
 PROJECT_VERSION = 0.2.0
 
 
-all: compile
-compile: 
-	./rebar compile
+all:
+	rebar compile
 
 test: eunit qc
 
 doc:
-	./rebar doc
+	rebar doc
 
 clean:
-	./rebar clean
+	rebar clean
 
 dialyzer:
-	./rebar analyze
+	rebar analyze
 
-eunit:  compile
-	./rebar eunit
+eunit:
+	rebar eunit
 
-qc: compile
-	./rebar qc
+qc:
+	rebar qc
 
 COMPILE_FIRST = triq_autoexport
 ERLC_OPTS += +warnings_as_errors
-

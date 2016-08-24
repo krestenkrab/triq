@@ -1,0 +1,17 @@
+%% -*- mode: erlang;erlang-indent-level: 4;indent-tabs-mode: nil -*-
+%% ex: ts=4 sw=4 ft=erlang et
+
+case crypto:start() of
+    {error, {already_started, crypto}} ->
+        ok;
+    ok ->
+        ok
+end,
+case erlang:function_exported(crypto, strong_rand_bytes, 1) of
+    true ->
+        {value, {erl_opts, ErlOpts}} = lists:keysearch(erl_opts, 1, CONFIG),
+        NewErlOpts = [{d, 'HAVE_CRYPTO_STRONG_RAND_BYTES'}] ++ ErlOpts,
+        lists:keyreplace(erl_opts, 1, CONFIG, {erl_opts, NewErlOpts});
+    false ->
+        CONFIG
+end.

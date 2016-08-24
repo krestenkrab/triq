@@ -128,7 +128,7 @@ and have a function added called `check/0` which runs `triq:check/1` on all the 
 A handy addition that I use is to also add an `eunit` test, which tests it:
 
 ```erlang
-property_test() -> true == check().
+property_test() -> true = check().
 ```
 Which can then automatically be run using your favourite `eunit` runner.
 
