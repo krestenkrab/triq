@@ -24,6 +24,7 @@
          int/0,
          int/1,
          int/2,
+         float/0,
          largeint/0,
          byte/0,
          real/0,
@@ -46,7 +47,10 @@
          non_empty/1,
          resize/2,
          non_neg_integer/0,
-         pos_integer/0]).
+         pos_integer/0,
+         map/0,
+         map_pick/2,
+         map_shrink/2]).
 
 -define(TRIQ_DOM_UNICODE_EXPORTS,
         [unicode_char/0,

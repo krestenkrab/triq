@@ -312,13 +312,9 @@ all(Fun,[H|T]) ->
 %% @end
 %%--------------------------------------------------------------------
 module(Module) when is_atom(Module) ->
-<<<<<<< HEAD
-    module(Module, 100).
-
-=======
     module(Module, ?TEST_COUNT).
 
->>>>>>> 810eed84f66cc2596cf26ce731beed34ae3ed977
+
 module(Module, RunIters) when is_integer(RunIters), RunIters>0 ->
     Info = Module:module_info(exports),
     all(fun({Fun,0}) ->
@@ -546,5 +542,5 @@ numtests(Num,Prop) ->
 -define(crypto_rand_bytes(N), crypto:rand_bytes(N)).
 -endif.
 generate_randomness() ->
-    <<A:32, B:32, C:32>> = ?crypto_rand_bytes(12),
-    triq_rnd:seed({A, B, C}).
+    <<A:32, B:32, C:32>> = crypto:strong_rand_bytes(12),
+    rand:seed(exs1024, {A, B, C}).
