@@ -3,7 +3,7 @@
 %%
 %% This file is part of Triq - Trifork QuickCheck
 %%
-%% Copyright (c) 2010 by Trifork
+%% Copyright the Triq Contributors (c.f. AUTHORS)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 %% limitations under the License.
 %%
 
+-define(LAZY(X), DELAY(X)).
 -define(DELAY(X), fun()->X end).
 -define(FORCE(X), (X)() ).
 -define(DOMAIN_MODULE, triq_dom).
@@ -33,6 +34,8 @@
         {'prop:trapexit', ?DELAY(Property), ??Property}).
 -define(TIMEOUT(Limit,Property),
         {'prop:timeout', Limit, ?DELAY(Property), ??Property}).
+-define(SETUP(SetupFun,Property),
+        {'prop:setup', SetupFun, ?DELAY(Property), ??Property}).
 
 %%
 %% import property functions
@@ -62,56 +65,11 @@
 %%
 %% import domain functions (a.k.a. generators)
 %%
--import(?DOMAIN_MODULE,
-        [list/1,
-         tuple/1,
-         int/0,
-         int/1,
-         int/2,
-         byte/0,
-         real/0,
-         sized/1,
-         elements/1,
-         any/0,
-         atom/0,
-         atom/1,
-         choose/2,
-         oneof/1,
-         frequency/1,
-         bool/0,
-         char/0,
-         return/1,
-         vector/2,
-         binary/1,
-         binary/0,
-         non_empty/1,
-         resize/2,
-         non_neg_integer/0,
-         pos_integer/0,
+-include("triq_dom.hrl").
+-import(?DOMAIN_MODULE, ?TRIQ_DOM_EXPORTS).
+-import(?DOMAIN_MODULE, ?TRIQ_DOM_UNICODE_EXPORTS).
+-import(?DOMAIN_MODULE, ?TRIQ_DOM_GENERATOR_EXPORTS).
 
-         %% Unicode
-         unicode_char/0,
-         unicode_string/0,
-         unicode_string/1,
-         unicode_binary/0,
-         unicode_binary/1,
-         unicode_binary/2,
-         unicode_characters/0,
-         unicode_characters/1,
-
-         %% using a generator
-         bind/2,
-         bindshrink/2,
-         suchthat/2,
-         pick/2,
-         shrink/2,
-         sample/1,
-         sampleshrink/1,
-         seal/1,
-         open/1,
-         peek/1,
-         domain/3,
-         shrink_without_duplicates/1]).
 
 %%
 %% Enabling this (the default) does two things (similar to eunit).

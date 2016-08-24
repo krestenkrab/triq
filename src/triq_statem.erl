@@ -3,7 +3,7 @@
 %%
 %% This file is part of Triq - Trifork QuickCheck
 %%
-%% Copyright (c) 2011-2013 by Trifork
+%% Copyright the Triq Contributors (c.f. AUTHORS)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -41,6 +41,19 @@
          prop_statem/1,
          command_names/1,
          zip/2]).
+
+-type state() :: term().
+-type command() :: {call, atom(), atom(), [_]}.
+-callback(initial_state() ->
+                  state()).
+-callback(command(state()) ->
+                command()).
+-callback(precondition(state(),command()) ->
+                 boolean()).
+-callback(postcondition(state(),command(), term()) ->
+                 boolean()).
+-callback(next_state(state(),term(), command()) ->
+                 term()).
 
 
 commands(Module) ->
@@ -112,11 +125,12 @@ commands_shrink(Module,SymbolicStates,Domains, Dom, Commands,Tries) ->
     true = (Len > 0),
 
     %% choose a segment of commands to delete...
-    RemIdx = random:uniform(Len),
+    RemIdx = rand:uniform(Len),
     RemLen = if RemIdx==Len ->
                      0;
                 true ->
-                     random:uniform(?MIN(5, Len-RemIdx))
+                     rand:uniform(?MIN(5, Len-RemIdx))
+
              end,
 
     NewCommands = without(RemIdx,RemLen,Commands),
@@ -181,7 +195,7 @@ do_run_command(Commands, Env, Module, History, State) ->
         [{init,S}|Rest] ->
             do_run_command(Rest, Env, Module, History, S);
 
-        [{set, {var,V}=Var, {call,M,F,A}=SymCall}|Rest] ->
+        [{set, {var,V}=_Var, {call,M,F,A}=SymCall}|Rest] ->
             M2=eval(Env,M),
             F2=eval(Env,F),
             A2=eval(Env,A),
@@ -195,8 +209,9 @@ do_run_command(Commands, Env, Module, History, State) ->
             case Module:postcondition(State,SubstCall,Res) of
                 true ->
                     Env2 = [{V,Res}|proplists:delete(V,Env)],
-                    State2 = Module:next_state(State,Var,SymCall),
-                    do_run_command(Rest, Env2, Module, History2, State2);
+                    State2 = Module:next_state(State,Res,SymCall),
+                    State3 = eval(Env2, State2),
+                    do_run_command(Rest, Env2, Module, History2, State3);
 
                 Other ->
                     {History, eval(Env,State), {postcondition, Other}}

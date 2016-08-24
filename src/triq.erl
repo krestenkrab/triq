@@ -3,7 +3,7 @@
 %%
 %% This file is part of Triq - Trifork QuickCheck
 %%
-%% Copyright (c) 2010-2013 by Trifork
+%% Copyright the Triq Contributors (c.f. AUTHORS)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -34,6 +34,11 @@
 -export([check/1,
          check/2,
          check/3,
+         quickcheck/1,
+         quickcheck/2,
+         quickcheck/3,
+         conjunction/1,
+         equals/2,
          fails/1,
          module/1,
          module/2,
@@ -47,13 +52,19 @@
 
 -record(triq, {count=0,
                context=[],
-               size=?TEST_COUNT,  %% todo: remove this
-               run_iter=?TEST_COUNT,
+               size=?TEST_COUNT,
                report= fun report_none/2,
                shrinking= false,
                result=undefined,
                body,
                values=[]}).
+
+-on_load(load_rand_module/0).
+
+%% Make sure triq_rnd module is generated, compiled, and loaded
+load_rand_module() ->
+    {ok, triq_rnd} = triq_rand_compat:init("triq_rnd"),
+    ok.
 
 %%
 %% Default reporting function, ... is silent
@@ -92,6 +103,10 @@ check_input(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
         {failure, _, _, _, _}=Fail ->
             Fail;
 
+        {'prop:setup', SetupFun, Property, Body2} ->
+            SetupFun(),
+            check_input(fun(none)->Property() end,none,none,QCT#triq{body=Body2});
+
         {'prop:timeout', Limit, Fun2, Body2} ->
             Yield = check_timeout(Fun,Input,IDom,Limit,Fun2,
                                   QCT#triq{body=Body2}),
@@ -107,6 +122,18 @@ check_input(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
                 _ -> {success, Count+1}
             end;
 
+        {'prop:conjunction', []} ->
+            {success, Count+1};
+        {'prop:conjunction', [{_Tag, Property}|Properties]} ->
+            case check_input(fun(none)->Property end,none,none,QCT#triq{}) of
+                {success, _} ->
+                    check_input(fun(none)->
+                                        {'prop:conjunction', Properties} end,
+                                none,none,QCT#triq{});
+                Any ->
+                    Any
+            end;
+
         {'prop:implies', false, _, _, _} ->
             DoReport(skip,true),
             {success, Count};
@@ -116,7 +143,7 @@ check_input(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
 
         {'prop:numtests', Iters, Property} ->
             check_input(fun(none)->Property end,none,none,
-                        QCT#triq{ run_iter=Iters });
+                        QCT#triq{size=Iters});
 
         {'prop:whenfail', Action, Fun2, Body2} ->
             case check_input(fun(none)->Fun2()end,none,none,
@@ -159,7 +186,7 @@ check_input(Fun,Input,IDom,#triq{count=Count,report=DoReport}=QCT) ->
             end;
 
         {'prop:forall', Dom2, Syntax2, Fun2, Body2} ->
-            check_forall(0, QCT#triq.run_iter, Dom2, Fun2, Syntax2,
+            check_forall(0, QCT#triq.size, Dom2, Fun2, Syntax2,
                          QCT#triq{body=Body2});
 
         Any ->
@@ -234,6 +261,7 @@ check_timeout(Fun,Input,IDom,Limit,Fun2,
 
     Yield.
 
+
 check_forall(N,N,_,_,_,#triq{count=Count}) ->
     {success, Count};
 check_forall(N,NMax,Dom,Fun,Syntax,#triq{context=Context,values=Values}=QCT) ->
@@ -285,7 +313,8 @@ all(Fun,[H|T]) ->
 %%--------------------------------------------------------------------
 module(Module) when is_atom(Module) ->
     module(Module, ?TEST_COUNT).
-    
+
+
 module(Module, RunIters) when is_integer(RunIters), RunIters>0 ->
     Info = Module:module_info(exports),
     all(fun({Fun,0}) ->
@@ -299,6 +328,24 @@ module(Module, RunIters) when is_integer(RunIters), RunIters>0 ->
         end,
         Info).
 
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Run QuickCheck.  If argument is an atom, it runs triq:module/1
+%% checking all the properties in said module; otherwise if the
+%% argument is a property, it runs QuickCheck on said property.
+%%
+%% @spec quickcheck( atom() | property() ) -> any()
+%% @end
+%%--------------------------------------------------------------------
+quickcheck(Target) ->
+    check(Target).
+
+quickcheck(Target, Params) ->
+    check(Target, Params).
+
+quickcheck(Property, Counterexample, RunIters) ->
+    check(Property, Counterexample, RunIters).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -335,7 +382,7 @@ check(Property, Counterexample, RunIters) ->
     case check_input(fun(nil)->Property end,
                      nil,
                      nil,
-                     #triq{report=fun report/2, run_iter=RunIters,
+                     #triq{report=fun report/2, size=RunIters,
                            values=Counterexample}) of
 
         {failure, Fun, Input, InputDom, #triq{count=Count,context=Ctx,
@@ -447,6 +494,18 @@ shrink_loop(Fun,Input,InputDom,GS,Context,Tested) ->
             end
     end.
 
+%%-------------------------------------------------------------------
+%% @doc
+%% Returns true when the arguments are equal.
+%%
+%% @spec equals( term(), term() ) -> boolean()
+%% @end
+%%-------------------------------------------------------------------
+equals(_X, _X) ->
+    true;
+equals(_X, _Y) ->
+    false.
+
 %%--------------------------------------------------------------------
 %% @doc
 %% A Property which succeeds when its argument fails, and fails
@@ -458,12 +517,30 @@ shrink_loop(Fun,Input,InputDom,GS,Context,Tested) ->
 %%--------------------------------------------------------------------
 fails(Prop) ->
     {'prop:fails', Prop}.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% A Property which succeeds when all of the properties passed in are
+%% true.  Note, this method short-circuits on the first failure in the
+%% list and subsequent properties are not tested.
+%%
+%% @spec conjunction( list({atom(), property()}) ) -> property()
+%% @end
+%%--------------------------------------------------------------------
+conjunction(Properties) ->
+    {'prop:conjunction', Properties}.
+
 numtests(Num,Prop) ->
     {'prop:numtests', Num, Prop}.
 
 %%
 %% 12 crypto-safe random bytes to seed erlang random number generator
 %%
+-ifdef(HAVE_CRYPTO_STRONG_RAND_BYTES).
+-define(crypto_rand_bytes(N), crypto:strong_rand_bytes(N)).
+-else.
+-define(crypto_rand_bytes(N), crypto:rand_bytes(N)).
+-endif.
 generate_randomness() ->
-    <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
-    random:seed({A, B, C}).
+    <<A:32, B:32, C:32>> = crypto:strong_rand_bytes(12),
+    rand:seed(exs1024, {A, B, C}).

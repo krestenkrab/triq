@@ -3,7 +3,7 @@
 %%
 %% This file is part of Triq - Trifork QuickCheck
 %%
-%% Copyright (c) 2011-2013 by Trifork
+%% Copyright the Triq Contributors (c.f. AUTHORS)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -112,11 +112,11 @@ commands_shrink(Module,SymbolicStates,Domains, Dom, Commands,Tries) ->
     true = (Len > 0),
 
     %% choose a segment of commands to delete...
-    RemIdx = random:uniform(Len),
+    RemIdx = rand:uniform(Len),
     RemLen = if RemIdx==Len ->
                      0;
                 true ->
-                     random:uniform(?MIN(5, Len-RemIdx))
+                     rand:uniform(?MIN(5, Len-RemIdx))
              end,
 
     NewCommands = without(RemIdx,RemLen,Commands),
