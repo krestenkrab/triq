@@ -58,6 +58,13 @@
                body,
                values=[]}).
 
+-on_load(load_rand_module/0).
+
+%% Make sure triq_rnd module is generated, compiled, and loaded
+load_rand_module() ->
+    {ok, triq_rnd} = triq_rand_compat:init("triq_rnd"),
+    ok.
+
 %%
 %% Default reporting function, ... is silent
 %%
@@ -287,7 +294,7 @@ all(Fun,[H|T]) ->
 %% @end
 %%--------------------------------------------------------------------
 module(Module) when is_atom(Module) ->
-    module(Module, 100).
+    module(Module, ?TEST_COUNT).
     
 module(Module, RunIters) when is_integer(RunIters), RunIters>0 ->
     Info = Module:module_info(exports),
@@ -335,8 +342,8 @@ check(Module) when is_atom(Module)->
 check(Property) ->
     check(Property, [], ?TEST_COUNT).
 
-check(Module, _RunIters) when is_atom(Module) ->
-    module(Module);
+check(Module, RunIters) when is_atom(Module), is_integer(RunIters), RunIters>0 ->
+    module(Module, RunIters);
 check(Property, RunIters) when is_integer(RunIters), RunIters>0 ->
     check(Property, [], RunIters);
 check(Property, CounterExample) when is_list(CounterExample) ->
@@ -485,6 +492,11 @@ numtests(Num,Prop) ->
 %%
 %% 12 crypto-safe random bytes to seed erlang random number generator
 %%
+-ifdef(HAVE_CRYPTO_STRONG_RAND_BYTES).
+-define(crypto_rand_bytes(N), crypto:strong_rand_bytes(N)).
+-else.
+-define(crypto_rand_bytes(N), crypto:rand_bytes(N)).
+-endif.
 generate_randomness() ->
-    <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
-    random:seed({A, B, C}).
+    <<A:32, B:32, C:32>> = ?crypto_rand_bytes(12),
+    triq_rnd:seed({A, B, C}).
