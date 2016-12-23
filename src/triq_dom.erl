@@ -287,8 +287,8 @@ shrink_pair(ListDom,List,0) ->
     {ListDom,List};
 shrink_pair([HDom|TDom]=ListDom, [H|T]=List, NAttempts) ->
     %% choose if we shrink the head or the tail
-    ShrinkHead = (random:uniform(2) =:= 1),
-    ShrinkTail = (random:uniform(2) =:= 1),
+    ShrinkHead = (rand:uniform(2) =:= 1),
+    ShrinkTail = (rand:uniform(2) =:= 1),
 
     %% then do it
     case
@@ -367,7 +367,7 @@ shrink_list_members(ListDom, List, Len, HowMany)
     %%
     %% replace element at RemIdx with simplified one
     %%
-    RemIdx = random:uniform(Len),
+    RemIdx = rand:uniform(Len),
     Elm = lists:nth(RemIdx, List),
     ElmDom = lists:nth(RemIdx, ListDom),
 
@@ -406,9 +406,9 @@ list(ElemDom) ->
 list_pick(#?DOM{kind=#list{elem=ElemDom},empty_ok=EmptyOK},
           SampleSize) ->
     OutLen = if EmptyOK =:= false ->
-                     random:uniform(SampleSize);
+                     rand:uniform(SampleSize);
                 EmptyOK =:= true ->
-                     random:uniform(SampleSize)-1
+                     rand:uniform(SampleSize)-1
              end,
 
     %%
@@ -445,7 +445,7 @@ list_shrink(#?DOM{kind={shrinkable_list, ListDom, Len}, empty_ok=EmptyOK},
     ?assert(length(List) == Len),
     SmallerOK = ((EmptyOK and (Len>0)) or (Len>1)),
 
-    case SmallerOK and (random:uniform(5) == 1) of
+    case SmallerOK and (rand:uniform(5) == 1) of
         true ->
             shorter_list(ListDom,List,Len,EmptyOK);
 
@@ -460,14 +460,14 @@ list_shrink(#?DOM{kind={shrinkable_list, ListDom, Len}, empty_ok=EmptyOK},
     end.
 
 shorter_list(ListDom,List,Len,EmptyOK) ->
-    case random:uniform(3) of
+    case rand:uniform(3) of
         1 -> %% Remove one element.
-            RemIdx = random:uniform(Len),
+            RemIdx = rand:uniform(Len),
             shrinkable_list(without(RemIdx, ListDom), without(RemIdx, List),
                             Len-1, EmptyOK);
         2 -> %% Remove or keep a random sublist.
-            Idx1 = random:uniform(Len),
-            Idx2 = random:uniform(Len),
+            Idx1 = rand:uniform(Len),
+            Idx2 = rand:uniform(Len),
             if Idx1 < Idx2 ->         % Remove the sublist [Idx1;Idx2]
                     shrinkable_list( without(Idx1,Idx2, ListDom),
                                      without(Idx1,Idx2, List),
@@ -480,8 +480,8 @@ shorter_list(ListDom,List,Len,EmptyOK) ->
             end;
         3 -> %% Remove a random sublist.
             Zipped = lists:zip(ListDom, List),
-            TrueTreshold  = random:uniform(),
-            FalseTreshold = random:uniform(),
+            TrueTreshold  = rand:uniform(),
+            FalseTreshold = rand:uniform(),
             %% This may happen to be the original list again.
             Pruned = markov_prune_list(Zipped, TrueTreshold, FalseTreshold,
                                        false),
@@ -492,7 +492,7 @@ shorter_list(ListDom,List,Len,EmptyOK) ->
 
 markov_prune_list([], _,_,_) -> [];
 markov_prune_list([H|T], TrueTreshold, FalseTreshold, Prev) ->
-    Rnd = random:uniform(),
+    Rnd = rand:uniform(),
     Threshold = if Prev -> TrueTreshold;
                    true -> FalseTreshold
                 end,
@@ -514,9 +514,9 @@ tuple_pick(#?DOM{kind=#tuple{elem=ElemDom},empty_ok=EmptyOK},
            SampleSize) ->
 
     OutLen = if EmptyOK =:= false ->
-                     random:uniform(SampleSize);
+                     rand:uniform(SampleSize);
                 EmptyOK =:= true ->
-                     random:uniform(SampleSize)-1
+                     rand:uniform(SampleSize)-1
              end,
 
     %%
@@ -551,7 +551,7 @@ tuple_shrink(#?DOM{kind={shrinkable_tuple, TupleDom}, empty_ok=EmptyOK},
     case shrink(TupleDom,Tuple) of
         {_, Tuple} when AllowSmaller ->
 
-            RemIdx = random:uniform(tuple_size(Tuple)),
+            RemIdx = rand:uniform(tuple_size(Tuple)),
             shrinkable_tuple(without(RemIdx, TupleDom),
                              without(RemIdx, Tuple),
                              EmptyOK);
@@ -570,7 +570,7 @@ int() ->
                     (Dom,0) -> {Dom,0}
                  end,
           pick=fun(Dom,SampleSize) ->
-                       {Dom, random:uniform(SampleSize) - (SampleSize div 2)}
+                       {Dom, rand:uniform(SampleSize) - (SampleSize div 2)}
                end
          }.
 
@@ -585,7 +585,7 @@ int(Min, Max) ->
                     (Dom,0) -> {Dom,0}
                  end,
           pick=fun(Dom,_SampleSize) ->
-                       {Dom, random:uniform(Diff) + Min}
+                       {Dom, rand:uniform(Diff) + Min}
                end
          }.
 
@@ -605,7 +605,7 @@ non_neg_integer() ->
                   (Dom,0) -> {Dom,0}
                end,
         pick=fun(Dom,SampleSize) ->
-                     {Dom, abs(random:uniform(SampleSize)) + 0}
+                     {Dom, abs(rand:uniform(SampleSize)) + 0}
              end
        }.
 
@@ -619,7 +619,7 @@ pos_integer() ->
                   (Dom,1) -> {Dom,1}
                end,
         pick=fun(Dom,SampleSize) ->
-                     {Dom, abs(random:uniform(SampleSize)) + 1}
+                     {Dom, abs(rand:uniform(SampleSize)) + 1}
              end
        }.
 
@@ -631,7 +631,7 @@ real() ->
     #?DOM{
         kind=real,
         pick=fun(Dom,SampleSize) ->
-                     {Dom, (random:uniform()*SampleSize) - (SampleSize / 2)}
+                     {Dom, (rand:uniform()*SampleSize) - (SampleSize / 2)}
              end,
         shrink=fun(Dom,Val) -> {Dom, Val/2.0} end
        }.
@@ -642,7 +642,7 @@ real() ->
 bool() ->
     #?DOM{
         kind=boolean,
-        pick=fun(Dom,_) -> {Dom, random:uniform(2)==1} end,
+        pick=fun(Dom,_) -> {Dom, rand:uniform(2)==1} end,
         shrink=fun(_,_) -> {false, false} end
        }.
 
@@ -652,12 +652,12 @@ char() ->
     #?DOM{
         kind=char,
         pick=fun(Dom,_) ->
-                     {Dom, $a + random:uniform($z - $a + 1)-1}
+                     {Dom, $a + rand:uniform($z - $a + 1)-1}
              end,
         shrink=fun(Dom,V) when V =< $c ->
                        {Dom,V};
                   (Dom,N) when N > $c, N =< $z ->
-                       {Dom,N - random:uniform(3)}
+                       {Dom,N - rand:uniform(3)}
                end
        }.
 
@@ -681,14 +681,14 @@ binary_pick(#?DOM{kind=#binary{size=Size}, empty_ok=EmptyOK}=BinDom,
              any ->
                  case EmptyOK of
                      true ->
-                         random:uniform(SampleSize)-1;
+                         rand:uniform(SampleSize)-1;
                      false ->
-                         random:uniform(SampleSize)
+                         rand:uniform(SampleSize)
                  end;
              Size ->
                  Size
          end,
-    BinValue = list_to_binary(foldn(fun(T) -> [random:uniform(256)-1 | T] end,
+    BinValue = list_to_binary(foldn(fun(T) -> [rand:uniform(256)-1 | T] end,
                                     [],
                                     Sz)),
     {BinDom, BinValue}.
@@ -731,9 +731,9 @@ atom_pick(#?DOM{kind=#atom{size=Size}, empty_ok=EmptyOK}=AtomDom, SampleSize) ->
              any ->
                  case EmptyOK of
                      true ->
-                         random:uniform(xmin(SampleSize,256))-1;
+                         rand:uniform(xmin(SampleSize,256))-1;
                      false ->
-                         random:uniform(xmin(SampleSize,256))
+                         rand:uniform(xmin(SampleSize,256))
                  end;
              Size ->
                  Size
@@ -782,7 +782,7 @@ shrink_list_with_elemdom(ElemDom,List,Length,AllowSmaller) ->
     %% 1/5 of the time, try shrinking by removing an elemet
     case AllowSmaller andalso shrink_smaller(Length) of
         true ->
-            RemoveIdx = random:uniform(Length),
+            RemoveIdx = rand:uniform(Length),
             without(RemoveIdx, List);
         false ->
             HowManyToShrink = shrink_members(Length),
@@ -791,7 +791,7 @@ shrink_list_with_elemdom(ElemDom,List,Length,AllowSmaller) ->
 
                 %% can we remove an element?
                 List when AllowSmaller ->
-                    RemIdx = random:uniform(Length),
+                    RemIdx = rand:uniform(Length),
                     without(RemIdx, List);
 
                 %% it changed!
@@ -803,13 +803,13 @@ shrink_list_with_elemdom(ElemDom,List,Length,AllowSmaller) ->
 %% decide if something of size `Length' should be shrunk by removing an element
 shrink_smaller(0) -> false;
 shrink_smaller(_Length) ->
-    random:uniform(5)==1.
+    rand:uniform(5)==1.
 
 %% decide how many of
 shrink_members(0) -> 0;
 shrink_members(Length) when Length>0 ->
-    case random:uniform(5) of
-        1 -> random:uniform(5);
+    case rand:uniform(5) of
+        1 -> rand:uniform(5);
         _ -> 1
     end.
 
@@ -832,7 +832,7 @@ shrink_list_N(#?DOM{}=ElemDom, List, Len, N) ->
     %%
     %% replace element at RemIdx with simplified one
     %%
-    RemIdx = random:uniform(Len),
+    RemIdx = rand:uniform(Len),
     Elm = lists:nth(RemIdx, List),
     %% io:format("shrinking elem ~p (~p) of ~p~n", [RemIdx,Elm,List]),
 
@@ -913,7 +913,7 @@ bindshrink2(OrigBox1,Box1,Box2,Fun,SampleSize) ->
                            case shrink({_,List1}=Box1) of
                                {_, List1} ->
                                    {OrigDom1,OrigList1}=OrigBox1,
-                                   Index = random:uniform(length(OrigList1)),
+                                   Index = rand:uniform(length(OrigList1)),
                                    { lists:nth(Index,OrigDom1),
                                      lists:nth(Index,OrigList1) };
 
@@ -960,7 +960,7 @@ suchthat_loop(N,Dom,Fun,SampleSize) ->
 
 
 smaller(Domain) ->
-    ?SIZED(SZ, resize(random:uniform((SZ div 2)+1), Domain)).
+    ?SIZED(SZ, resize(rand:uniform((SZ div 2)+1), Domain)).
 
 
 -spec any() -> domain(any()).
@@ -983,7 +983,7 @@ oneof(DomList) when is_list(DomList) ->
          }.
 
 oneof_pick(#?DOM{kind=#oneof{elems=DomList, size=Length}}, SampleSize) ->
-    Dom = lists:nth(random:uniform(Length), DomList),
+    Dom = lists:nth(rand:uniform(Length), DomList),
     pick(Dom, SampleSize).
 
 %% --------------------------------------------------------------
@@ -999,7 +999,7 @@ frequency(GenList) when is_list(GenList) ->
 
     domain(frequency,
            fun(_,SampleSize) ->
-                   Limit = random:uniform(Sum),
+                   Limit = rand:uniform(Sum),
                    {ok,Gen} = lists:foldl(
                                 fun (_, {ok, _}=Acc) ->
                                         Acc;
@@ -1060,7 +1060,7 @@ choose(M,N) when is_integer(M), is_integer(N), M<N ->
          }.
 
 choose_pick(#?DOM{kind=#choose{min=M,max=N}}=Dom, _) ->
-    Value = random:uniform(N-M+1) - 1 + M,
+    Value = rand:uniform(N-M+1) - 1 + M,
     {Dom,Value}.
 
 choose_shrink(#?DOM{kind=#choose{min=M}}=Dom, Value) ->
@@ -1080,7 +1080,7 @@ elements(L) when is_list(L), length(L)>0 ->
 
 -spec elements_pick(domain(T), pos_integer()) -> {domain(T), T}.
 elements_pick(#?DOM{kind=#elements{elems=Elems,size=Length}=Kind}=Dom, _) ->
-    Picked = random:uniform(Length),
+    Picked = rand:uniform(Length),
     Value = lists:nth(Picked,Elems),
     { Dom#?DOM{kind=Kind#elements{picked=Picked}},
       Value }.
@@ -1132,7 +1132,7 @@ shrink_without_duplicates_loop(Dom,Val,Tested,Tries) ->
 %%--------------------------------------------------------------------
 sample(Dom) ->
     foldn(fun(T) ->
-                  {_,Val} = pick(Dom, 20 + random:uniform(10) ),
+                  {_,Val} = pick(Dom, 20 + rand:uniform(10) ),
                   [Val|T]
           end,
           [],
@@ -1145,14 +1145,14 @@ sample(Dom) ->
 %%-------------------------------------------------------------------
 -spec seal(Dom::domain(T)) -> domrec(box(T)).
 seal(Dom) ->
-    Seed = random:seed(),
-    random:seed(Seed),
+    Seed = rand:seed(exsplus),
+    rand:seed(exsplus, Seed),
     #?DOM{kind=#seal{dom=Dom,seed=Seed}, pick=fun seal_pick/2}.
 
 seal_pick(#?DOM{kind=#seal{dom=Dom,seed=Seed}}, SampleSize) ->
-    OldSeed = random:seed(Seed),
+    OldSeed = rand:seed(exsplus, Seed),
     {BoxDom,BoxValue} = pick(Dom,SampleSize),
-    random:seed(OldSeed),
+    rand:seed(exsplus, OldSeed),
     #?BOX{dom=BoxDom,value=BoxValue}.
 
 %%-------------------------------------------------------------------
@@ -1227,7 +1227,7 @@ sampleshrink_loop(Dom,Val) ->
 %% <pre>even() ->
 %%    domain(even,
 %%      fun(Self,Size) ->
-%%            Value = (random:uniform(Size) * 2) div 2,
+%%            Value = (rand:uniform(Size) * 2) div 2,
 %%            {Self, Value}
 %%      end,
 %%      fun(Self,Value) when Value>0 ->
@@ -1301,7 +1301,7 @@ unicode_char() ->
                 {Dom, random_unicode_char()}
         end,
     S = fun(Dom,V) ->
-                NewV = case (V - random:uniform(?UNICODE_CHAR_SHRINK_STEP)) of
+                NewV = case (V - rand:uniform(?UNICODE_CHAR_SHRINK_STEP)) of
                            X when X < 0 -> V;
                            X when X >= 16#D800, X =< 16#DFFF ->
                                %% skip surrogates.
@@ -1321,7 +1321,7 @@ unicode_char() ->
 
 -spec random_unicode_char() -> uchar().
 random_unicode_char() ->
-    case (random:uniform(16#10FFFF + 1) - 1) of
+    case (rand:uniform(16#10FFFF + 1) - 1) of
         C when C >= 16#D800 andalso C =< 16#DFFF ->
             %% surrogates
             random_unicode_char();
@@ -1381,9 +1381,9 @@ unicode_binary_pick(#?DOM{kind=#unicode_binary{size=Size, encoding=Encoding},
              any ->
                  case EmptyOK of
                      true ->
-                         random:uniform(SampleSize)-1;
+                         rand:uniform(SampleSize)-1;
                      false ->
-                         random:uniform(SampleSize)
+                         rand:uniform(SampleSize)
                  end;
              Size ->
                  Size

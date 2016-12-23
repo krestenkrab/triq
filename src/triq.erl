@@ -465,5 +465,5 @@ numtests(Num,Prop) ->
 %% 12 crypto-safe random bytes to seed erlang random number generator
 %%
 generate_randomness() ->
-    <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
-    random:seed({A, B, C}).
+    <<A:32, B:32, C:32>> = crypto:strong_rand_bytes(12),
+    rand:seed(exsplus, {A, B, C}).

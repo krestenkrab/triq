@@ -182,7 +182,7 @@ shrinking logic.  For instance, the even numbers can be specified thus:
 <pre>even() ->
 domain(even,
 fun(Self,Size) ->
-Value = (random:uniform(Size) * 2) div 2,
+Value = (rand:uniform(Size) * 2) div 2,
 {Self, Value}
 end,
 fun(Self,Value) when Value>0 ->
