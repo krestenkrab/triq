@@ -37,6 +37,7 @@
          fails/1,
          module/1,
          module/2,
+         module_props/1,
          counterexample/0,
          counterexample/1,
          numtests/2]).
@@ -287,19 +288,27 @@ module(Module) when is_atom(Module) ->
     module(Module, ?TEST_COUNT).
     
 module(Module, RunIters) when is_integer(RunIters), RunIters>0 ->
-    Info = Module:module_info(exports),
-    all(fun({Fun,0}) ->
-                case atom_to_list(Fun) of
-                    "prop_" ++ _ ->
-                        io:format("Testing ~p:~p/0~n", [Module, Fun]),
-                        check(Module:Fun(), RunIters);
-                    _ -> true
-                end;
-           ({_,_}) -> true
-        end,
-        Info).
+ 
+    Props = module_props(Module),
+    all(fun(Fun) ->
+                io:format("Testing ~p:~p/0~n", [Module, Fun]),
+                check(Module:Fun(), RunIters)
+           end,
+        Props).
 
-
+module_props(Module) ->
+    Info  = Module:module_info(exports),
+    Props = lists:filter(fun({Fun, 0}) ->
+                         case atom_to_list(Fun) of
+                             "prop_" ++ _ ->
+                                 true;
+                             _ ->
+                                 false
+                         end;       
+                    (_) -> false
+                         end, Info),
+    [Prop|| {Prop, 0} <- Props].
+                                
 %%--------------------------------------------------------------------
 %% @doc
 %% Run QuickCheck.  If argument is an atom, it runs triq:module/1
